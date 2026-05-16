@@ -1,0 +1,43 @@
+{
+  "id": "stage-001",
+  "nameJa": "平原の戦い",
+  "descriptionJa": "シンプルな平原マップ。基本的な戦術を学ぼう。",
+  "width": 10,
+  "height": 10,
+  "victoryCondition": "elimination",
+  "turnLimit": 20,
+  "difficulty": "normal",
+  "playerSpawnArea": [
+    { "col": 0, "row": 8 }, { "col": 1, "row": 8 }, { "col": 2, "row": 8 },
+    { "col": 3, "row": 8 }, { "col": 4, "row": 8 }, { "col": 0, "row": 9 },
+    { "col": 1, "row": 9 }, { "col": 2, "row": 9 }, { "col": 3, "row": 9 }
+  ],
+  "enemySpawnArea": [
+    { "col": 0, "row": 0 }, { "col": 1, "row": 0 }, { "col": 2, "row": 0 },
+    { "col": 3, "row": 0 }, { "col": 4, "row": 0 }, { "col": 0, "row": 1 },
+    { "col": 1, "row": 1 }, { "col": 2, "row": 1 }, { "col": 3, "row": 1 }
+  ],
+  "terrainOverrides": [
+    { "col": 4, "row": 4, "terrain": "highland" },
+    { "col": 5, "row": 4, "terrain": "highland" },
+    { "col": 4, "row": 5, "terrain": "highland" },
+    { "col": 2, "row": 3, "terrain": "forest" },
+    { "col": 3, "row": 3, "terrain": "forest" },
+    { "col": 2, "row": 4, "terrain": "forest" },
+    { "col": 7, "row": 6, "terrain": "forest" },
+    { "col": 7, "row": 7, "terrain": "forest" },
+    { "col": 6, "row": 2, "terrain": "building" },
+    { "col": 7, "row": 2, "terrain": "building" },
+    { "col": 1, "row": 6, "terrain": "water" },
+    { "col": 2, "row": 6, "terrain": "water" },
+    { "col": 8, "row": 4, "terrain": "rubble" },
+    { "col": 8, "row": 5, "terrain": "rubble" }
+  ],
+  "enemyComposition": [
+    { "type": "tanker", "col": 2, "row": 0 },
+    { "type": "attacker", "col": 4, "row": 0 },
+    { "type": "archer", "col": 1, "row": 1 },
+    { "type": "healer", "col": 3, "row": 1 },
+    { "type": "seeker", "col": 0, "row": 0 }
+  ]
+}

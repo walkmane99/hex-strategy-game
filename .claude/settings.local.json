@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm show *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\kwalk\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-kwalk-projects-android-hex-strategy-game\\\\a6e1e321-abc1-4e76-8e46-7684693244a0\\\\tasks\\\\br382vskw.output\" -Wait)",
+      "Bash(Select-String -Pattern \"added|warn|error|npm\" --AllMatches)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kwalk\\\\projects\\\\android\\\\hex-strategy-game\" -Recurse -Filter \"*.html\")",
+      "Bash(Select-Object FullName)",
+      "Bash(npm list *)",
+      "Bash(npm why *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kwalk\\\\projects\\\\android\\\\hex-strategy-game\" -Recurse -Force -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(dir \"C:\\\\Users\\\\kwalk\\\\projects\\\\android\\\\hex-strategy-game\\\\components\")",
+      "Bash(dir \"C:\\\\Users\\\\kwalk\\\\projects\\\\android\\\\hex-strategy-game\" /b)",
+      "mcp__ide__getDiagnostics",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\kwalk\\\\projects\\\\android\\\\hex-strategy-game\" -Directory)",
+      "Bash(Select-Object Name)",
+      "Bash(gh auth *)",
+      "Bash(powershell *)"
+    ]
+  }
+}

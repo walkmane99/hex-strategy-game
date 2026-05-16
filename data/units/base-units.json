@@ -1,0 +1,213 @@
+[
+  {
+    "type": "tanker",
+    "nameJa": "タンカー",
+    "descriptionJa": "防御力重視の前衛。周囲の味方に防御ボーナスを与える。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 6,
+      "defense": 15,
+      "movement": 4,
+      "scout": 5
+    },
+    "affinity": {
+      "strong": ["archer"],
+      "weak": ["assassin"]
+    },
+    "aura": {
+      "type": "defense_boost",
+      "range": 2,
+      "value": 2
+    },
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "attacker",
+    "nameJa": "アタッカー",
+    "descriptionJa": "攻撃力重視の突撃兵。周囲の味方に攻撃ボーナスを与える。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 15,
+      "defense": 7,
+      "movement": 6,
+      "scout": 5
+    },
+    "affinity": {
+      "strong": ["assassin"],
+      "weak": ["tanker"]
+    },
+    "aura": {
+      "type": "attack_boost",
+      "range": 2,
+      "value": 2
+    },
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "healer",
+    "nameJa": "ヒーラー",
+    "descriptionJa": "毎ターン周囲5マスのユニットを回復する支援役。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 3,
+      "defense": 8,
+      "movement": 5,
+      "scout": 6
+    },
+    "affinity": {
+      "strong": [],
+      "weak": ["tanker", "attacker", "seeker", "assassin", "sniper", "archer"]
+    },
+    "aura": {
+      "type": "heal",
+      "range": 5,
+      "minValue": 100,
+      "maxValue": 150
+    },
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "seeker",
+    "nameJa": "シーカー",
+    "descriptionJa": "移動力と索敵力に特化した偵察兵。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 5,
+      "defense": 6,
+      "movement": 15,
+      "scout": 15
+    },
+    "affinity": {
+      "strong": ["sniper"],
+      "weak": ["archer"]
+    },
+    "aura": null,
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "assassin",
+    "nameJa": "アサシン",
+    "descriptionJa": "高機動・高火力。敵の索敵から逃れる能力を持つ。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 13,
+      "defense": 6,
+      "movement": 14,
+      "scout": 7
+    },
+    "affinity": {
+      "strong": ["tanker", "healer"],
+      "weak": ["attacker"]
+    },
+    "aura": null,
+    "special": "stealth",
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "sniper",
+    "nameJa": "スナイパー",
+    "descriptionJa": "マップ全体が射程。ただし索敵済みの敵にしか攻撃できない。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 16,
+      "defense": 5,
+      "movement": 4,
+      "scout": 8
+    },
+    "affinity": {
+      "strong": ["attacker"],
+      "weak": ["seeker"]
+    },
+    "aura": null,
+    "attackRange": "all",
+    "requiresVisible": true,
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "archer",
+    "nameJa": "アーチャー",
+    "descriptionJa": "2〜3マス離れた距離から攻撃できる中距離兵。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 11,
+      "defense": 7,
+      "movement": 7,
+      "scout": 8
+    },
+    "affinity": {
+      "strong": ["seeker"],
+      "weak": ["tanker"]
+    },
+    "aura": null,
+    "attackRange": [2, 3],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "engineer",
+    "nameJa": "エンジニア",
+    "descriptionJa": "地形操作と索敵マーカー設置が得意な技術兵。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 7,
+      "defense": 9,
+      "movement": 6,
+      "scout": 9
+    },
+    "affinity": {
+      "strong": ["sniper"],
+      "weak": ["assassin"]
+    },
+    "aura": {
+      "type": "terrain_ignore",
+      "range": 2
+    },
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "berserker",
+    "nameJa": "バーサーカー",
+    "descriptionJa": "HPが低いほど攻撃力が上昇する狂戦士。範囲攻撃持ち。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 12,
+      "defense": 8,
+      "movement": 7,
+      "scout": 5
+    },
+    "affinity": {
+      "strong": ["archer"],
+      "weak": ["sniper"]
+    },
+    "aura": null,
+    "special": "berserker_rage",
+    "attackRange": [1],
+    "aoeAttack": true,
+    "initiallyUnlocked": true
+  },
+  {
+    "type": "illusionist",
+    "nameJa": "イリュージョニスト",
+    "descriptionJa": "デコイ設置と敵の索敵妨害が得意な惑乱兵。",
+    "baseStats": {
+      "maxHP": 1000,
+      "attack": 5,
+      "defense": 7,
+      "movement": 8,
+      "scout": 12
+    },
+    "affinity": {
+      "strong": ["seeker", "sniper"],
+      "weak": ["attacker"]
+    },
+    "aura": null,
+    "special": "decoy",
+    "attackRange": [1],
+    "initiallyUnlocked": true
+  }
+]

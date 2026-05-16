@@ -1,0 +1,75 @@
+[
+  {
+    "type": "flare",
+    "nameJa": "照明弾",
+    "descriptionJa": "2ターン間、指定エリアの敵ユニット（デコイ含む）を可視化する",
+    "targetType": "area",
+    "duration": 2,
+    "unlockCondition": "standard_clear"
+  },
+  {
+    "type": "camo_net",
+    "nameJa": "迷彩ネット",
+    "descriptionJa": "1ユニットを2ターン間、索敵されにくくする",
+    "targetType": "unit",
+    "duration": 2,
+    "unlockCondition": "clear_with_seeker"
+  },
+  {
+    "type": "supply_pack",
+    "nameJa": "補給パック",
+    "descriptionJa": "指定ユニットのHPを30%回復する",
+    "targetType": "unit",
+    "duration": 0,
+    "unlockCondition": "all_units_survived"
+  },
+  {
+    "type": "emp_grenade",
+    "nameJa": "EMP手榴弾",
+    "descriptionJa": "指定エリアのユニットの移動力を1ターン半減する",
+    "targetType": "area",
+    "duration": 1,
+    "unlockCondition": "clear_within_5_turns"
+  },
+  {
+    "type": "land_mine",
+    "nameJa": "地雷",
+    "descriptionJa": "指定マスに設置。踏むとダメージ",
+    "targetType": "cell",
+    "duration": -1,
+    "unlockCondition": "clear_with_engineer"
+  },
+  {
+    "type": "drone_recon",
+    "nameJa": "ドローン偵察",
+    "descriptionJa": "マップの一部エリアを1ターン完全索敵する",
+    "targetType": "area",
+    "duration": 1,
+    "unlockCondition": "sniper_3_kills"
+  },
+  {
+    "type": "carpet_bombing",
+    "nameJa": "縦断爆撃",
+    "descriptionJa": "全ての敵ユニット（未索敵も含む）に約300ダメージ",
+    "targetType": "all_enemy",
+    "duration": 0,
+    "damage": 300,
+    "unlockCondition": "all_survived_within_3_turns"
+  },
+  {
+    "type": "smoke_screen",
+    "nameJa": "煙幕",
+    "descriptionJa": "一時的に広範囲の索敵を無効化する",
+    "targetType": "area",
+    "duration": 2,
+    "unlockCondition": "specific_mission"
+  },
+  {
+    "type": "barricade",
+    "nameJa": "仮設バリケード",
+    "descriptionJa": "一時的な通行不能地形を設置する",
+    "targetType": "cell",
+    "duration": 3,
+    "unlockCondition": "defense_mission_clear"
+  }
+]

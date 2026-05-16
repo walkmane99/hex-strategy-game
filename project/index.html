@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>戦略ゲーム — Tactical UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #0a0c0d; color: #d8d4cc; font-family: "Noto Sans JP", system-ui, sans-serif; }
+  *, *::before, *::after { box-sizing: border-box; }
+  /* Tactical HUD design tokens */
+  :root {
+    --bg-0: #07090a;
+    --bg-1: #0d1012;
+    --bg-2: #14181b;
+    --bg-3: #1c2125;
+    --bg-4: #262c30;
+    --line: #2d343a;
+    --line-strong: #3d464d;
+    --ink: #e6e2d6;
+    --ink-2: #aaa69a;
+    --ink-3: #6b6b62;
+    --amber: #ff8a1e;
+    --amber-bright: #ffb547;
+    --amber-soft: #6b3a06;
+    --red: #e23a2b;
+    --red-soft: #4a1410;
+    --cyan: #2ec5d3;
+    --green: #5eaa3a;
+    --olive: #4a4f2a;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --display: "Rajdhani", "Noto Sans JP", sans-serif;
+  }
+  .tac { font-family: var(--mono); letter-spacing: .02em; }
+  .disp { font-family: var(--display); letter-spacing: .04em; font-weight: 600; }
+  /* page chrome */
+  body { min-height: 100vh; }
+  .page-head {
+    padding: 28px 40px 12px; display:flex; align-items:flex-end; gap:24px; justify-content: space-between;
+    border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #0a0d0f, #07090a);
+  }
+  .page-head .crest { display:flex; align-items:center; gap:14px; }
+  .page-head .mark { width:40px; height:40px; border:1px solid var(--amber); display:flex; align-items:center; justify-content:center; color:var(--amber); font-family: var(--mono); font-weight:700; transform: rotate(45deg); }
+  .page-head .mark span { transform: rotate(-45deg); }
+  .page-head h1 { margin:0; font-family: var(--display); font-size: 22px; font-weight:700; letter-spacing:.18em; color:var(--ink); }
+  .page-head .sub { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing:.18em; text-transform: uppercase; }
+  .page-head .right { display:flex; gap:18px; align-items:center; font-family: var(--mono); font-size:11px; color: var(--ink-3); letter-spacing:.16em; text-transform: uppercase; }
+  .page-head .right b { color: var(--amber); font-weight:500; }
+</style>
+</head>
+<body>
+  <div class="page-head">
+    <div class="crest">
+      <div class="mark"><span>※</span></div>
+      <div>
+        <div class="sub">SECTOR 7 · TACTICAL OPS · CL-A</div>
+        <h1>戦略ゲーム / TACTICAL HEX COMMAND</h1>
+      </div>
+    </div>
+    <div class="right">
+      <span>BUILD <b>v0.1.4</b></span>
+      <span>FORMAT <b>9:16 / ANDROID</b></span>
+      <span>STATUS <b>● LIVE</b></span>
+    </div>
+  </div>
+
+  <div id="root"></div>
+
+  <script>
+    // Tweaks defaults
+    window.__TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "mapPreset": "都市部 \/ URBAN",
+      "showFog": true,
+      "showThreat": true,
+      "showSightLines": false,
+      "accent": "#ff8a1e"
+    }/*EDITMODE-END*/;
+  </script>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="android-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+
+  <script type="text/babel" src="hud.jsx"></script>
+  <script type="text/babel" src="hex-map.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
