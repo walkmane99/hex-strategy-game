@@ -1,5 +1,6 @@
 import { Unit } from '@/types/unit';
 import { OffsetCoord, MapCell, VictoryCondition } from '@/types/map';
+import { ItemSlot } from '@/types/item';
 
 export type AIActionType =
   | 'move'
@@ -60,6 +61,15 @@ export interface ScoreWeights {
   pincerBonus: number;
   formationBonus: number;
   isolationPenalty: number;
+  concentratedAttackBonus: number;
+  vanguardBonus: number;
+  lowHpProtectionBonus: number;
+  // Substitution (Phase 7)
+  affinitySwapBonus: number;
+  lowHpSubstituteBonus: number;
+  healerSupplementBonus: number;
+  supplyCutBonus: number;
+  substitutionActionLossPenalty: number;
   // Unit-specific
   tankerAllyProximityBonus: number;
   attackerAuraBonus: number;
@@ -107,6 +117,10 @@ export interface AIContext {
   visibility: VisibilityMap;
   probability?: ProbabilityMap;
   threat: ThreatMap;
+  teamInventory?: ItemSlot[]; // AI チームが保有するアイテム
+  tentativePlan?: Map<string, ActionCandidate>; // unitId → 暫定アクション (Layer 2 のみ設定)
+  reserves?: Unit[];       // 控えユニット
+  canSubstitute?: boolean; // 今ターン交代可能か
 }
 
 export interface UnitAction {
@@ -114,6 +128,8 @@ export interface UnitAction {
   type: AIActionType;
   destination?: OffsetCoord;
   targetUnit?: Unit;
+  itemId?: string;
+  skillId?: string;
 }
 
 export interface TurnPlan {
@@ -127,4 +143,16 @@ export interface GameStateSnapshot {
   currentTurn: number;
   maxTurns?: number;
   mission: MissionType;
+  teamInventory?: {
+    player: ItemSlot[];
+    enemy: ItemSlot[];
+  };
+  reserves?: {
+    player: Unit[];
+    enemy: Unit[];
+  };
+  substitutionUsedThisTurn?: {
+    player: boolean;
+    enemy: boolean;
+  };
 }

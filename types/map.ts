@@ -56,4 +56,5 @@ export type VictoryCondition =
   | 'survival'     // 生存戦
   | 'escape'       // 脱出戦
   | 'time_limit'   // 時間切れ
-  | 'territory';   // 陣取り
+  | 'territory'    // 陣取り
+  | 'protect_hq';  // 本拠地防衛

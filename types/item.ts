@@ -29,6 +29,11 @@ export type ItemTargetType =
   | 'all_enemy'  // 全敵
   | 'cell';      // マス指定
 
+export interface ItemSlot {
+  itemId: ItemType;
+  remainingUses: number;
+}
+
 export interface ItemUsage {
   itemType: ItemType;
   usedAt: number; // ターン数

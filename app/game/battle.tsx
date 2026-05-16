@@ -20,6 +20,7 @@ import {
   markActed,
   applyDamage,
   setUnitVisible,
+  tickCooldowns,
 } from '@/store/slices/unitSlice';
 import {
   setReachableCells,
@@ -27,7 +28,9 @@ import {
   clearSelectionCells,
   setAnimating,
   addLog,
+  setTeamInventory,
 } from '@/store/slices/battleSlice';
+import { ItemSlot } from '@/types/item';
 import { endPlayerTurn } from '@/store/slices/gameSlice';
 import TacBracket from '@/components/ui/TacBracket';
 import TacTag from '@/components/ui/TacTag';
@@ -151,6 +154,7 @@ export default function TacticsScreen() {
   const currentTurn = useAppSelector((s) => s.game.currentTurn);
   const phase = useAppSelector((s) => s.game.phase);
   const selectedSquad = useAppSelector((s) => s.player.selectedSquad);
+  const selectedItems = useAppSelector((s) => s.player.selectedItems);
 
   const gridRef = useRef<MapCell[][]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -179,8 +183,16 @@ export default function TacticsScreen() {
     dispatch(initPlayerUnits(pUnits));
     dispatch(initEnemyUnits(eUnits));
     gridRef.current = buildGrid(URBAN_MAP, [...pUnits, ...eUnits]);
+
+    const playerItemSlots: ItemSlot[] = selectedItems.map(id => ({ itemId: id, remainingUses: 1 }));
+    const enemyItemSlots: ItemSlot[] = [
+      { itemId: 'flare', remainingUses: 1 },
+      { itemId: 'supply_pack', remainingUses: 1 },
+    ];
+    dispatch(setTeamInventory({ player: playerItemSlots, enemy: enemyItemSlots }));
+
     setIsInitialized(true);
-  }, [dispatch, selectedSquad]);
+  }, [dispatch, selectedSquad, selectedItems]);
 
   // Scouting: update enemy visibility at turn start
   const updateVisibility = useCallback(() => {
@@ -199,8 +211,9 @@ export default function TacticsScreen() {
   useEffect(() => {
     if (phase === 'player_turn' && isInitialized) {
       updateVisibility();
+      dispatch(tickCooldowns('player'));
     }
-  }, [phase, isInitialized, updateVisibility]);
+  }, [phase, isInitialized, updateVisibility, dispatch]);
 
   // Recompute move/attack overlays when selection or phase changes
   useEffect(() => {

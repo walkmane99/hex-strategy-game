@@ -10,11 +10,25 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAppDispatch } from '@/hooks/redux';
+import { setSelectedItems } from '@/store/slices/playerSlice';
+import { ItemType } from '@/types/item';
 import PhoneTopBar from '@/components/ui/PhoneTopBar';
 import TacBracket from '@/components/ui/TacBracket';
 import TacHeader from '@/components/ui/TacHeader';
 import TacBtn from '@/components/ui/TacBtn';
 import { C, MONO, DISPLAY } from '@/constants/theme';
+
+const ITEM_ID_TO_TYPE: Record<string, ItemType> = {
+  'IT-01': 'flare',
+  'IT-02': 'emp_grenade',
+  'IT-03': 'supply_pack',
+  'IT-04': 'camo_net',
+  'IT-05': 'land_mine',
+  'IT-06': 'drone_recon',
+  'IT-07': 'carpet_bombing',
+  'IT-08': 'smoke_screen',
+};
 
 const ITEMS = [
   { id: 'IT-01', name: '照明弾',     code: 'FLARE',    have: 3, desc: '2T 指定エリア可視化' },
@@ -86,6 +100,7 @@ const ItemCard = React.memo(function ItemCard({
 });
 
 export default function ItemScreen() {
+  const dispatch = useAppDispatch();
   const [picked, setPicked] = useState<string[]>(['IT-01', 'IT-02']);
 
   const toggleItem = (id: string) => {
@@ -165,7 +180,13 @@ export default function ItemScreen() {
           primary
           kbd="A"
           style={styles.nextBtn}
-          onPress={() => router.push('/game/battle')}
+          onPress={() => {
+            const itemTypes = picked
+              .map(id => ITEM_ID_TO_TYPE[id])
+              .filter((t): t is ItemType => t !== undefined);
+            dispatch(setSelectedItems(itemTypes));
+            router.push('/game/battle');
+          }}
         >
           出撃 / DEPLOY
         </TacBtn>

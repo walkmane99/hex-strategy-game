@@ -1,6 +1,7 @@
 import { createEntityAdapter, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Unit } from '@/types/unit';
+import { Unit, SpecialSkillType } from '@/types/unit';
 import { OffsetCoord } from '@/types/map';
+import { SKILL_INITIAL_COOLDOWN } from '@/constants/aiThresholds';
 import type { RootState } from '../index';
 
 // プレイヤーユニット用アダプター
@@ -101,6 +102,36 @@ const unitSlice = createSlice({
     setReserveUnit: (state, action: PayloadAction<string | null>) => {
       state.reserveUnitId = action.payload;
     },
+    activateSkill: (
+      state,
+      action: PayloadAction<{ unitId: string; skillId: SpecialSkillType; side: 'player' | 'enemy' }>,
+    ) => {
+      const { unitId, skillId, side } = action.payload;
+      const adapter = side === 'player' ? state.playerUnits : state.enemyUnits;
+      const unit = adapter.entities[unitId];
+      if (!unit?.skills) return;
+      const slot = unit.skills.find(s => s.skillId === skillId);
+      if (!slot) return;
+      slot.cooldown = SKILL_INITIAL_COOLDOWN[skillId] ?? 3;
+      if (slot.remainingUses !== undefined) slot.remainingUses = Math.max(0, slot.remainingUses - 1);
+    },
+    substituteEnemy: (
+      state,
+      action: PayloadAction<{ removedUnitId: string; newUnit: Unit; position: OffsetCoord }>,
+    ) => {
+      const { removedUnitId, newUnit, position } = action.payload;
+      enemyAdapter.removeOne(state.enemyUnits, removedUnitId);
+      enemyAdapter.addOne(state.enemyUnits, { ...newUnit, position, hasActed: true, side: 'enemy' });
+    },
+    tickCooldowns: (state, action: PayloadAction<'player' | 'enemy'>) => {
+      const adapter = action.payload === 'player' ? state.playerUnits : state.enemyUnits;
+      Object.values(adapter.entities).forEach(unit => {
+        if (!unit?.skills) return;
+        for (const slot of unit.skills) {
+          if (slot.cooldown > 0) slot.cooldown -= 1;
+        }
+      });
+    },
   },
 });
 
@@ -117,6 +148,9 @@ export const {
   setUnitVisible,
   swapWithReserve,
   setReserveUnit,
+  activateSkill,
+  tickCooldowns,
+  substituteEnemy,
 } = unitSlice.actions;
 
 // セレクター

@@ -143,11 +143,14 @@ function evaluateArcher(candidate: ActionCandidate, context: AIContext): number 
 }
 
 function evaluateEngineer(candidate: ActionCandidate, context: AIContext): number {
-  if (candidate.type !== 'move' || !candidate.targetTile) return 0;
-  const { grid, weights } = context;
-  const dest = candidate.targetTile;
-  const destCell = grid[dest.row]?.[dest.col];
-  return destCell?.terrain === 'highland' ? weights.engineerScoutPositionBonus : 0;
+  // useSkill scout_marker: highland タイルへの設置に +25 (近似の「高地移動 +15」から正式実装へ)
+  if (candidate.type === 'useSkill' && candidate.skillId === 'scout_marker') {
+    const { grid } = context;
+    if (!candidate.targetTile) return context.weights.engineerScoutPositionBonus;
+    const destCell = grid[candidate.targetTile.row]?.[candidate.targetTile.col];
+    return destCell?.terrain === 'highland' ? 25 : 10;
+  }
+  return 0;
 }
 
 function evaluateBerserker(candidate: ActionCandidate, context: AIContext): number {
@@ -172,11 +175,17 @@ function evaluateBerserker(candidate: ActionCandidate, context: AIContext): numb
 }
 
 function evaluateIllusionist(candidate: ActionCandidate, context: AIContext): number {
-  if (candidate.type !== 'move' || !candidate.targetTile) return 0;
-  const { grid, weights } = context;
-  const dest = candidate.targetTile;
-  const destCell = grid[dest.row]?.[dest.col];
-  return destCell?.terrain === 'forest' ? weights.illusionistConcealmentBonus : 0;
+  // useSkill decoy: 敵索敵範囲内への設置ほど高スコア (近似の「森林移動 +20」から正式実装へ)
+  if (candidate.type === 'useSkill' && candidate.skillId === 'decoy') {
+    const { visibleEnemyUnits, weights } = context;
+    if (!candidate.targetTile) return weights.illusionistConcealmentBonus;
+    // 可視敵の索敵範囲 (3マス) 内に設置するほど囮効果が高い
+    const overlapCount = visibleEnemyUnits.filter(
+      e => offsetDistance(candidate.targetTile!, e.position) <= 3,
+    ).length;
+    return overlapCount > 0 ? weights.illusionistConcealmentBonus + (overlapCount - 1) * 5 : 0;
+  }
+  return 0;
 }
 
 // =====================

@@ -33,6 +33,7 @@ export interface Unit {
   hasActed: boolean;    // このターン行動済みか
   isDead: boolean;
   customPoints?: number; // カスタマイズポイント振り分け済み
+  skills?: SkillSlot[];
 }
 
 // 戦略フェーズでのカスタマイズ設定
@@ -62,7 +63,15 @@ export type SpecialSkillType =
   | 'emergency_repair'
   | 'defense_pierce'
   | 'swift_thunder'
-  | 'scout_jamming';
+  | 'scout_jamming'
+  | 'scout_marker'   // エンジニア: 索敵マーカー設置
+  | 'decoy';         // イリュージョニスト: デコイ設置
+
+export interface SkillSlot {
+  skillId: SpecialSkillType;
+  cooldown: number;        // 0 = 使用可能
+  remainingUses?: number;  // undefined = 無制限
+}
 
 export interface SpecialSkill {
   type: SpecialSkillType;

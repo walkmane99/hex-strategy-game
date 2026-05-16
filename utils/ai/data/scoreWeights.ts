@@ -17,10 +17,19 @@ export const DEFAULT_SCORE_WEIGHTS: ScoreWeights = {
   multipleRangeBonus: 15,
   lowHpRetreatBonus: 50,
   sniperNonDetectedBonus: 20,
-  // Group tactics (Phase 6 — defined here, used by future groupTactics.ts)
+  // Group tactics (Phase 6)
   pincerBonus: 50,
   formationBonus: 15,
   isolationPenalty: -30,
+  concentratedAttackBonus: 25,
+  vanguardBonus: 20,
+  lowHpProtectionBonus: 35,
+  // Substitution (Phase 7)
+  affinitySwapBonus: 70,
+  lowHpSubstituteBonus: 50,
+  healerSupplementBonus: 40,
+  supplyCutBonus: 30,
+  substitutionActionLossPenalty: -30,
   // Unit-specific
   tankerAllyProximityBonus: 20,
   attackerAuraBonus: 15,
