@@ -39,7 +39,7 @@ export const AURA_CONFIG = {
   AURA_RANGE: 2,              // オーラ範囲 (マス)
   HEALER_HEAL_MIN: 100,       // ヒーラー回復最小
   HEALER_HEAL_MAX: 150,       // ヒーラー回復最大
-  HEALER_RANGE: 5,            // ヒーラー回復範囲
+  HEALER_RANGE: 1,            // ヒーラー回復範囲 (仕様書4.3: 半径1=隣接6マス)
 } as const;
 
 export const POINT_CONFIG = {

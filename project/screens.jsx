@@ -407,6 +407,89 @@ function ItemScreen() {
   );
 }
 
+// MISSION START — looping cinematic overlay for the hex map
+function MissionStartOverlay({ accent = '#ff8a1e' }) {
+  const id = React.useId().replace(/:/g, '');
+  const css = `
+    @keyframes ms-bar-top-${id}   { 0%{transform:translateY(-100%)} 6%,40%{transform:translateY(0)} 50%,100%{transform:translateY(-100%)} }
+    @keyframes ms-bar-bot-${id}   { 0%{transform:translateY(100%)}  6%,40%{transform:translateY(0)} 50%,100%{transform:translateY(100%)} }
+    @keyframes ms-sweep-${id}     { 0%,8%{transform:translateX(-110%)} 22%{transform:translateX(110%)} 100%{transform:translateX(110%)} }
+    @keyframes ms-text-${id}      {
+      0%,10%   { opacity:0; transform:translate(-50%,-50%) scaleX(.4); letter-spacing:.6em; filter:blur(6px); }
+      18%      { opacity:1; transform:translate(-50%,-50%) scaleX(1);  letter-spacing:.34em; filter:blur(0); }
+      28%      { transform:translate(-50%,-50%) translateX(-2px); }
+      30%      { transform:translate(-50%,-50%) translateX(2px); }
+      32%      { transform:translate(-50%,-50%) translateX(-1px); }
+      34%,42%  { opacity:1; transform:translate(-50%,-50%); }
+      50%,100% { opacity:0; transform:translate(-50%,-50%) translateY(-6px); }
+    }
+    @keyframes ms-sub-${id}       { 0%,16%{opacity:0; transform:translate(-50%,8px)} 22%,42%{opacity:1; transform:translate(-50%,0)} 50%,100%{opacity:0} }
+    @keyframes ms-mark-${id}      { 0%,12%{opacity:0; transform:scale(.5)} 20%,42%{opacity:1; transform:scale(1)} 50%,100%{opacity:0} }
+    @keyframes ms-scan-${id}      { 0%,14%{opacity:0} 18%{opacity:.6} 42%{opacity:.6} 48%,100%{opacity:0} }
+    .ms-${id} { animation-duration: 6s; animation-iteration-count: infinite; animation-timing-function: cubic-bezier(.2,.7,.2,1); }
+  `;
+  const bar = { position:'absolute', left:0, right:0, height:'22%', background:'linear-gradient(180deg, rgba(7,9,10,.95), rgba(7,9,10,.55))', borderColor:accent, willChange:'transform' };
+  return (
+    <div style={{ position:'absolute', inset:'10px 8px 6px', pointerEvents:'none', overflow:'hidden' }}>
+      <style>{css}</style>
+      {/* black bars from top/bottom */}
+      <div className={`ms-${id}`} style={{ ...bar, top:0, borderBottom:`1px solid ${accent}`, animationName:`ms-bar-top-${id}` }}/>
+      <div className={`ms-${id}`} style={{ ...bar, bottom:0, borderTop:`1px solid ${accent}`, animationName:`ms-bar-bot-${id}` }}/>
+
+      {/* horizontal sweep flash */}
+      <div className={`ms-${id}`} style={{
+        position:'absolute', top:'40%', left:0, right:0, height:'20%',
+        background:`linear-gradient(90deg, transparent 0%, ${accent}00 40%, ${accent}55 50%, ${accent}00 60%, transparent 100%)`,
+        animationName:`ms-sweep-${id}`, willChange:'transform',
+      }}/>
+
+      {/* scanline behind text */}
+      <div className={`ms-${id}`} style={{
+        position:'absolute', top:'48%', left:0, right:0, height:1, background:accent,
+        boxShadow:`0 0 6px ${accent}`, animationName:`ms-scan-${id}`,
+      }}/>
+
+      {/* corner brackets */}
+      {[[0,0],[1,0],[0,1],[1,1]].map(([x,y], i) => (
+        <div key={i} className={`ms-${id}`} style={{
+          position:'absolute',
+          left: x ? 'auto' : 8, right: x ? 8 : 'auto',
+          top:  y ? 'auto' : '34%', bottom: y ? '34%' : 'auto',
+          width:14, height:14,
+          borderLeft:  x ? 'none' : `1.5px solid ${accent}`,
+          borderRight: x ? `1.5px solid ${accent}` : 'none',
+          borderTop:   y ? 'none' : `1.5px solid ${accent}`,
+          borderBottom:y ? `1.5px solid ${accent}` : 'none',
+          animationName:`ms-mark-${id}`,
+        }}/>
+      ))}
+
+      {/* MISSION START text */}
+      <div className={`ms-${id}`} style={{
+        position:'absolute', top:'46%', left:'50%', transform:'translate(-50%,-50%)',
+        fontFamily:'var(--display)', fontWeight:700, fontSize:30, letterSpacing:'.34em',
+        color:'#f5efe2', textShadow:`0 0 14px ${accent}aa, 0 0 2px #000`,
+        whiteSpace:'nowrap', animationName:`ms-text-${id}`,
+      }}>
+        MISSION START
+      </div>
+
+      {/* subtitle bar */}
+      <div className={`ms-${id}`} style={{
+        position:'absolute', top:'58%', left:'50%', transform:'translate(-50%,0)',
+        display:'flex', alignItems:'center', gap:8,
+        animationName:`ms-sub-${id}`,
+      }}>
+        <span style={{ display:'inline-block', width:18, height:1, background:accent }}/>
+        <span style={{ fontFamily:'var(--mono)', fontSize:9, letterSpacing:'.32em', color:accent }}>
+          OP. 0451 · M-04 · 貯水池の罠
+        </span>
+        <span style={{ display:'inline-block', width:18, height:1, background:accent }}/>
+      </div>
+    </div>
+  );
+}
+
 // ── 6. TACTICS — main hex battlefield ─────────────────────────
 function TacticsScreen({ tweaks }) {
   const t = tweaks || { mapPreset:'都市部 / URBAN', showFog:true, showThreat:true, showSightLines:false, accent:'#ff8a1e' };
@@ -439,8 +522,9 @@ function TacticsScreen({ tweaks }) {
       </div>
 
       {/* HEX MAP */}
-      <div style={{ padding:'10px 8px 6px', position:'relative' }}>
+      <div style={{ padding:'10px 8px 6px', position:'relative', overflow:'hidden' }}>
         <HexMap preset={t.mapPreset} width={SCREEN_W - 16} showFog={t.showFog} showThreat={t.showThreat} showSightLines={t.showSightLines} accent={t.accent}/>
+        <MissionStartOverlay accent={t.accent}/>
 
         {/* mini compass overlay */}
         <div style={{ position:'absolute', top:16, right:14, display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>

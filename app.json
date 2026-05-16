@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "HexStrategy",
+    "newArchEnabled": true,
     "slug": "hex-strategy-game",
     "version": "1.0.0",
     "orientation": "portrait",

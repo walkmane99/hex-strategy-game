@@ -8,11 +8,13 @@ function seededRandom(seed: number): number {
   return x - Math.floor(x);
 }
 
+function hasDestination(candidate: ActionCandidate): candidate is ActionCandidate & { targetTile: NonNullable<ActionCandidate['targetTile']> } {
+  return (candidate.type === 'move' || candidate.type === 'moveAndAttack') && candidate.targetTile != null;
+}
+
 function avgAllyDistance(candidate: ActionCandidate, context: AIContext): number {
   const { allyUnits, actingUnit } = context;
-  const ref = candidate.type === 'move' && candidate.targetTile
-    ? candidate.targetTile
-    : actingUnit.position;
+  const ref = hasDestination(candidate) ? candidate.targetTile : actingUnit.position;
   const others = allyUnits.filter(u => u.id !== actingUnit.id);
   if (others.length === 0) return 0;
   let total = 0;
@@ -21,14 +23,12 @@ function avgAllyDistance(candidate: ActionCandidate, context: AIContext): number
 }
 
 function movementCost(candidate: ActionCandidate, context: AIContext): number {
-  if (candidate.type !== 'move' || !candidate.targetTile) return 0;
+  if (!hasDestination(candidate)) return 0;
   return offsetDistance(context.actingUnit.position, candidate.targetTile);
 }
 
 function threatAt(candidate: ActionCandidate, context: AIContext): number {
-  const pos = candidate.type === 'move' && candidate.targetTile
-    ? candidate.targetTile
-    : context.actingUnit.position;
+  const pos = hasDestination(candidate) ? candidate.targetTile : context.actingUnit.position;
   return getThreatAt(context.threat, pos);
 }
 

@@ -46,6 +46,22 @@ export const DEFAULT_SCORE_WEIGHTS: ScoreWeights = {
   engineerScoutPositionBonus: 15,
   berserkerRageBonus: 60,
   illusionistConcealmentBonus: 20,
+  // Mission adjust (Phase 8a)
+  lowHpEnemyBonus: 20,
+  keyUnitAttackBonus: 100,
+  escapeKeyUnitAttackBonus: 120,
+  escapeApproachBonus: 30,
+  escapeBlockBonus: 50,
+  escapeTankerHoldBonus: 40,
+  defensiveSafetyMultiplier: 1.5,
+  attackerAdvancePenalty: -30,
+  healerRearBonus: 25,
+  hqProximityBonus: 40,
+  hqInterceptBonus: 60,
+  // Supply line (Phase 8a)
+  supplyCutPositionBonus: 55,
+  supplyCutTargetBonus: 25,
+  supplyCutSelfPenalty: -40,
 };
 
 export const ATTACK_RANGE_BY_TYPE: Record<string, number> = {

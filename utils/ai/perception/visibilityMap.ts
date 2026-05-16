@@ -1,5 +1,5 @@
 import { Unit } from '@/types/unit';
-import { MapCell, OffsetCoord } from '@/types/map';
+import { MapCell, OffsetCoord, TerrainType } from '@/types/map';
 import { VisibilityMap, VisibilityState } from '../core/types';
 import {
   offsetToCube,
@@ -74,6 +74,51 @@ export function updateVisibilityMap(
   return updated;
 }
 
+// Terrain that conceals assassins (10% base discovery rate)
+const ASSASSIN_CONCEAL_TERRAIN: ReadonlySet<TerrainType> = new Set([
+  'forest', 'building', 'highland', 'rubble',
+]);
+const ASSASSIN_DISCOVERY_MIN = 0.05;
+const ASSASSIN_DISCOVERY_MAX = 0.65;
+
+/**
+ * Assassin-specific visibility check using the 3-factor discovery formula.
+ * discoveryProb = terrainBase + scoutUnitBonus + distanceBonus (clamped 5%–65%)
+ * Exported for testing.
+ */
+export function isAssassinVisible(
+  target: Unit,
+  observers: Unit[],
+  grid: MapCell[][],
+  rng: () => number = Math.random,
+): boolean {
+  const targetCell = grid[target.position.row]?.[target.position.col];
+  const terrain = targetCell?.terrain ?? 'plain';
+  const terrainBase = ASSASSIN_CONCEAL_TERRAIN.has(terrain) ? 0.10 : 0.40;
+
+  for (const observer of observers) {
+    const range = getSightRange(observer, grid);
+    const dist = offsetDistance(observer.position, target.position);
+    if (dist > range) continue;
+
+    const scoutBonus =
+      observer.type === 'tanker' || observer.type === 'healer' ? -0.05
+      : observer.type === 'seeker' ? 0.10
+      : observer.type === 'assassin' ? 0.15
+      : 0;
+
+    const distBonus = dist === 1 ? 0.10 : dist === 2 ? 0.05 : 0;
+
+    const prob = Math.min(
+      ASSASSIN_DISCOVERY_MAX,
+      Math.max(ASSASSIN_DISCOVERY_MIN, terrainBase + scoutBonus + distBonus),
+    );
+
+    if (rng() < prob) return true;
+  }
+  return false;
+}
+
 /**
  * Whether a target unit is currently detectable by any observer.
  * Accepts an optional RNG for deterministic testing.
@@ -84,6 +129,10 @@ export function isUnitVisible(
   grid: MapCell[][],
   rng: () => number = Math.random,
 ): boolean {
+  if (target.type === 'assassin') {
+    return isAssassinVisible(target, observers, grid, rng);
+  }
+
   const targetCell = grid[target.position.row]?.[target.position.col];
   const inForest = targetCell?.terrain === 'forest';
 

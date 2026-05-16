@@ -154,19 +154,21 @@ describe('isUnitVisible — forest detection', () => {
     expect(isUnitVisible(target, [observer], makeGrid(), () => 0)).toBe(true);
   });
 
-  it('assassin in forest: detected when rng >= FOREST_HIDE_CHANCE (0.4)', () => {
+  it('assassin in forest: detected when rng < discovery probability (20%)', () => {
     const assassin = makeUnit('a1', 'assassin', { col: 2, row: 2 });
-    // rng = 0.5 >= 0.4, so hide check fails → detected
-    expect(isUnitVisible(assassin, [observer], grid, () => 0.5)).toBe(true);
+    // 3-factor formula: forest(10%) + seeker(+10%) + dist3(0%) = 20%
+    // rng=0.15 < 0.20 → detected
+    expect(isUnitVisible(assassin, [observer], grid, () => 0.15)).toBe(true);
   });
 
-  it('assassin in forest: NOT detected when rng < FOREST_HIDE_CHANCE (0.4)', () => {
+  it('assassin in forest: NOT detected when rng >= discovery probability (20%)', () => {
     const assassin = makeUnit('a1', 'assassin', { col: 2, row: 2 });
-    // rng = 0.2 < 0.4, so hide succeeds → not detected
-    expect(isUnitVisible(assassin, [observer], grid, () => 0.2)).toBe(false);
+    // 3-factor formula: forest(10%) + seeker(+10%) + dist3(0%) = 20%
+    // rng=0.20 >= 0.20 → not detected
+    expect(isUnitVisible(assassin, [observer], grid, () => 0.20)).toBe(false);
   });
 
-  it('approx 60% detection rate in 100 trials (forest hide chance = 0.4)', () => {
+  it('approx 20% detection rate in 200 trials (forest + seeker + dist3)', () => {
     const assassin = makeUnit('a1', 'assassin', { col: 2, row: 2 });
     let detected = 0;
     const trials = 200;
@@ -174,9 +176,9 @@ describe('isUnitVisible — forest detection', () => {
       if (isUnitVisible(assassin, [observer], grid)) detected++;
     }
     const rate = detected / trials;
-    // Expected 60% ± generous tolerance for stochastic test
-    expect(rate).toBeGreaterThan(0.45);
-    expect(rate).toBeLessThan(0.75);
+    // Expected 20% ± generous tolerance for stochastic test
+    expect(rate).toBeGreaterThan(0.08);
+    expect(rate).toBeLessThan(0.35);
   });
 });
 

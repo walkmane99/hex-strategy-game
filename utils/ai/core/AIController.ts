@@ -23,6 +23,8 @@ import { itemUsageEvaluator } from '../scoring/itemUsage';
 import { skillUsageEvaluator } from '../scoring/skillUsage';
 import { groupTacticsEvaluator } from '../scoring/groupTactics';
 import { substitutionEvaluator } from '../scoring/substitution';
+import { missionAdjustEvaluator } from '../scoring/missionAdjust';
+import { supplyLineEvaluator } from '../scoring/supplyLine';
 import { DEFAULT_SCORE_WEIGHTS } from '../data/scoreWeights';
 import { ScoreEvaluator } from '../scoring/types';
 import { buildVisibilityMap, updateVisibilityMap } from '../perception/visibilityMap';
@@ -39,6 +41,8 @@ const LAYER1_EVALUATORS: ScoreEvaluator[] = [
   unitSpecificEvaluator,
   itemUsageEvaluator,
   skillUsageEvaluator,
+  missionAdjustEvaluator,
+  supplyLineEvaluator,
 ];
 
 /** Layer 2: tentativePlan あり (groupTactics が実スコアを加算) */
@@ -80,6 +84,7 @@ export function buildAIContext(
     reserves: snapshot.reserves?.enemy,
     canSubstitute: !(snapshot.substitutionUsedThisTurn?.enemy) &&
                    (snapshot.reserves?.enemy?.length ?? 0) > 0,
+    missionMetadata: snapshot.missionMetadata,
   };
 }
 
@@ -122,6 +127,19 @@ function toUnitAction(best: ActionCandidate, planningGrid: MapCell[][]): UnitAct
     if (fromCell) fromCell.unitId = undefined;
     if (toCell) toCell.unitId = unit.id;
     return { unitId: unit.id, type: 'move', destination: best.targetTile };
+  }
+
+  if (best.type === 'moveAndAttack' && best.targetTile && best.targetUnit) {
+    const fromCell = planningGrid[unit.position.row]?.[unit.position.col];
+    const toCell = planningGrid[best.targetTile.row]?.[best.targetTile.col];
+    if (fromCell) fromCell.unitId = undefined;
+    if (toCell) toCell.unitId = unit.id;
+    return {
+      unitId: unit.id,
+      type: 'moveAndAttack',
+      destination: best.targetTile,
+      targetUnit: best.targetUnit,
+    };
   }
 
   if (best.type === 'useItem' && best.itemId) {

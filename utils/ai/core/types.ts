@@ -1,6 +1,7 @@
 import { Unit } from '@/types/unit';
 import { OffsetCoord, MapCell, VictoryCondition } from '@/types/map';
 import { ItemSlot } from '@/types/item';
+import { MissionMetadata } from '@/types/mission';
 
 export type AIActionType =
   | 'move'
@@ -86,6 +87,22 @@ export interface ScoreWeights {
   engineerScoutPositionBonus: number;
   berserkerRageBonus: number;
   illusionistConcealmentBonus: number;
+  // Mission adjust (Phase 8a)
+  lowHpEnemyBonus: number;
+  keyUnitAttackBonus: number;
+  escapeKeyUnitAttackBonus: number;
+  escapeApproachBonus: number;
+  escapeBlockBonus: number;
+  escapeTankerHoldBonus: number;
+  defensiveSafetyMultiplier: number;
+  attackerAdvancePenalty: number;
+  healerRearBonus: number;
+  hqProximityBonus: number;
+  hqInterceptBonus: number;
+  // Supply line (Phase 8a)
+  supplyCutPositionBonus: number;
+  supplyCutTargetBonus: number;
+  supplyCutSelfPenalty: number;
 }
 
 // =====================
@@ -121,6 +138,7 @@ export interface AIContext {
   tentativePlan?: Map<string, ActionCandidate>; // unitId → 暫定アクション (Layer 2 のみ設定)
   reserves?: Unit[];       // 控えユニット
   canSubstitute?: boolean; // 今ターン交代可能か
+  missionMetadata?: MissionMetadata;
 }
 
 export interface UnitAction {
@@ -155,4 +173,5 @@ export interface GameStateSnapshot {
     player: boolean;
     enemy: boolean;
   };
+  missionMetadata?: MissionMetadata;
 }

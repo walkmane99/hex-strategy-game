@@ -5,7 +5,8 @@ export function attackScoreEvaluator(
   candidate: ActionCandidate,
   context: AIContext,
 ): number {
-  if (candidate.type !== 'attack' || !candidate.targetUnit) return 0;
+  if (candidate.type !== 'attack' && candidate.type !== 'moveAndAttack') return 0;
+  if (!candidate.targetUnit) return 0;
 
   const { actingUnit, weights } = context;
   const target = candidate.targetUnit;

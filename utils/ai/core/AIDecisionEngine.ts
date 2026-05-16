@@ -230,6 +230,31 @@ export function generateCandidates(
     candidates.push({ type: 'move', unit, targetTile: cell, score: 0 });
   }
 
+  // moveAndAttack 候補 (仕様書4.2.1: 移動距離 < 最大移動力のときのみ攻撃可)
+  // スナイパーは移動後攻撃不可（射撃静止前提）
+  if (unit.type !== 'sniper') {
+    const maxMov = unit.stats.movement;
+    for (const cell of reachable) {
+      const dist = offsetDistance(unit.position, cell);
+      if (dist === 0) continue; // 移動なし = 'attack' 候補と重複するためスキップ
+      // バーサーカーは全力移動後も攻撃可; それ以外は dist < maxMov のみ
+      const canActAfterMove = unit.type === 'berserker' ? true : dist < maxMov;
+      if (!canActAfterMove) continue;
+
+      for (const player of visibleEnemyUnits) {
+        if (offsetDistance(cell, player.position) <= range) {
+          candidates.push({
+            type: 'moveAndAttack',
+            unit,
+            targetTile: cell,
+            targetUnit: player,
+            score: 0,
+          });
+        }
+      }
+    }
+  }
+
   // useItem 候補: チームインベントリから生成（候補数を制御）
   if (context.teamInventory) {
     for (const slot of context.teamInventory) {

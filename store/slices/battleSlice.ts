@@ -3,6 +3,7 @@ import { BattleLog } from '@/types/battle';
 import { OffsetCoord } from '@/types/map';
 import { ItemSlot, ItemType, ItemUsage } from '@/types/item';
 import { Unit } from '@/types/unit';
+import { MissionMetadata } from '@/types/mission';
 
 interface BattleState {
   logs: BattleLog[];
@@ -22,6 +23,7 @@ interface BattleState {
     player: boolean;
     enemy: boolean;
   };
+  missionMetadata?: MissionMetadata;
 }
 
 const initialState: BattleState = {
@@ -96,6 +98,9 @@ const battleSlice = createSlice({
     resetSubstitutionFlag: (state) => {
       state.substitutionUsedThisTurn = { player: false, enemy: false };
     },
+    setMissionMetadata: (state, action: PayloadAction<MissionMetadata>) => {
+      state.missionMetadata = action.payload;
+    },
     resetBattle: () => initialState,
   },
 });
@@ -113,6 +118,7 @@ export const {
   setReserves,
   executeSubstitution,
   resetSubstitutionFlag,
+  setMissionMetadata,
   resetBattle,
 } = battleSlice.actions;
 

@@ -11,10 +11,11 @@ export function targetPriorityEvaluator(
 ): number {
   const { actingUnit, visibleEnemyUnits, weights } = context;
 
-  if (candidate.type === 'attack') {
+  if (candidate.type === 'attack' || candidate.type === 'moveAndAttack') {
     if (!candidate.targetUnit) return 0;
     // Illusionist may be a decoy — discourage attacking
     if (candidate.targetUnit.type === 'illusionist') return -30;
+    // attackScore already accounts for healerPriority/rangedPriority; no double-count here
     return 0;
   }
 

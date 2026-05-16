@@ -9,7 +9,8 @@ export function movementScoreEvaluator(
   candidate: ActionCandidate,
   context: AIContext,
 ): number {
-  if (candidate.type !== 'move' || !candidate.targetTile) return 0;
+  if (candidate.type !== 'move' && candidate.type !== 'moveAndAttack') return 0;
+  if (!candidate.targetTile) return 0;
 
   const { actingUnit, visibleEnemyUnits } = context;
   if (visibleEnemyUnits.length === 0) return 0;

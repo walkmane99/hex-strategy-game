@@ -1,44 +1,44 @@
-# SKILL: React Native コンポーネント作成ガイド
+# SKILL: React Native Component Creation Guide
 
-## 対象ファイル
-- `components/hex/` — 6角形グリッドコンポーネント
-- `components/units/` — ユニット表示コンポーネント
-- `components/battle/` — 戦闘UI コンポーネント
-- `components/ui/` — 汎用UIコンポーネント
+## Target Files
+- `components/hex/` — Hex grid components
+- `components/units/` — Unit display components
+- `components/battle/` — Battle UI components
+- `components/ui/` — General-purpose UI components
 
 ---
 
-## 1. 環境制約 (Expo Go)
+## 1. Environment Constraints (Expo Go)
 
-### 使用可能なライブラリ
+### Allowed Libraries
 ```
 react-native (core)
-expo-*  (公式 Expo SDK)
-react-native-reanimated   # アニメーション
-react-native-gesture-handler  # ジェスチャー
-react-native-game-engine　# 物理演算
-react-native-svg          # SVG描画 (ヘックスグリッド)
-@reduxjs/toolkit          # 状態管理
+expo-*  (official Expo SDK)
+react-native-reanimated   # animation
+react-native-gesture-handler  # gestures
+react-native-game-engine  # physics
+react-native-svg          # SVG rendering (hex grid)
+@reduxjs/toolkit          # state management
 react-redux
-expo-router               # ナビゲーション
+expo-router               # navigation
 ```
 
-### 絶対に使用禁止
-- `react-native-skia` (Expo Go 非対応)
-- ネイティブモジュールを含む未管理パッケージ
-- `require()` での動的画像読み込み (静的 `import` を使用)
+### Strictly Prohibited
+- `react-native-skia` (not supported in Expo Go)
+- Any unmanaged packages that include native modules
+- Dynamic image loading via `require()` — use static `import` instead
 
 ---
 
-## 2. 6角形グリッド実装 (HexGrid.tsx)
+## 2. Hex Grid Implementation (HexGrid.tsx)
 
-### SVG を使った実装パターン
+### SVG-based Implementation Pattern
 ```typescript
 import Svg, { Polygon, G, Text } from 'react-native-svg';
 
 const HEX_SIZE = 36;
 
-// flat-top 六角形の頂点座標
+// Flat-top hexagon vertex coordinates
 function hexCorners(cx: number, cy: number, size: number): string {
   const angles = [0, 60, 120, 180, 240, 300];
   return angles
@@ -71,9 +71,22 @@ export const HexCell: React.FC<HexCellProps> = React.memo(({
 });
 ```
 
-### タッチ対応スクロール
+### Terrain Passability Rules
+**Water tiles are impassable for all units — no exceptions.**
+- Never set `isReachable = true` for water tiles regardless of unit type.
+- Apply this check in `pathfinding.ts` and also defensively in `HexCell` rendering.
+
 ```typescript
-// PanResponder でドラッグスクロール
+// pathfinding.ts
+function isPassable(terrain: TerrainType, _unit: Unit): boolean {
+  if (terrain === 'water') return false; // Impassable for ALL units
+  return true;
+}
+```
+
+### Touch-responsive Scrolling
+```typescript
+// Drag-scroll with PanResponder
 import { PanResponder, Animated } from 'react-native';
 
 const pan = useRef(new Animated.ValueXY()).current;
@@ -87,16 +100,16 @@ const panResponder = PanResponder.create({
 
 ---
 
-## 3. コンポーネント作成テンプレート
+## 3. Component Creation Template
 
-### 標準コンポーネント
+### Standard Component
 ```typescript
 import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View, Pressable, Text } from 'react-native';
 import { useAppSelector, useAppDispatch } from '@/hooks/redux';
 
 interface Props {
-  // 必須 props は明示的に型定義
+  // Explicitly type all required props
   id: string;
   onPress?: () => void;
 }
@@ -118,38 +131,38 @@ export const ComponentName: React.FC<Props> = React.memo(({ id, onPress }) => {
   );
 });
 
-ComponentName.displayName = 'ComponentName'; // デバッグ用
+ComponentName.displayName = 'ComponentName'; // for debugging
 
 const styles = StyleSheet.create({
   container: {
-    // flexbox ベース
+    // flexbox-based layout
   },
   button: {
-    // Pressable には hitSlop を設定
+    // Always set hitSlop on Pressable
     hitSlop: 8,
   },
   text: {
-    // フォントサイズはスケール対応
+    // Use scalable font sizes
   },
 });
 ```
 
 ---
 
-## 4. ユニットカード (UnitCard.tsx)
+## 4. Unit Card (UnitCard.tsx)
 
 ```typescript
 export const UnitCard: React.FC<{ unit: Unit; isSelected: boolean }> = React.memo(
   ({ unit, isSelected }) => {
     const borderColor = isSelected ? COLORS.selected : COLORS.border;
-    
+
     return (
       <View style={[styles.card, { borderColor }]}>
-        {/* ユニットアイコン */}
+        {/* Unit icon */}
         <UnitSprite type={unit.type} size={48} />
-        {/* ステータスバー */}
+        {/* HP bar */}
         <HPBar current={unit.currentHP} max={unit.maxHP} />
-        {/* ユニット名 */}
+        {/* Unit name */}
         <Text style={styles.name}>{UNIT_NAMES[unit.type]}</Text>
       </View>
     );
@@ -159,16 +172,76 @@ export const UnitCard: React.FC<{ unit: Unit; isSelected: boolean }> = React.mem
 
 ---
 
-## 5. アニメーション
+## 5. Action Menu (ActionMenu.tsx)
 
-### react-native-reanimated を使う
+### Move / Action Trade-off Rule
+Every unit follows this rule: **moving at full movement speed disables attack and skill use for that turn.**
+
+| Distance moved this turn | Attack | Skill use |
+|--------------------------|--------|-----------|
+| 0 to (maxMove − 1) tiles | ✅ Available | ✅ Available |
+| maxMove tiles (full move) | ❌ Disabled | ❌ Disabled |
+
+**Exception — Berserker only:** attack remains available after full movement.
+
+Implement this in `ActionMenu` by computing `canAct` and disabling the relevant buttons:
+
+```typescript
+interface ActionMenuProps {
+  unit: Unit;
+  movedDistance: number; // tiles moved so far this turn
+}
+
+export const ActionMenu: React.FC<ActionMenuProps> = React.memo(({ unit, movedDistance }) => {
+  const isFullMove = movedDistance >= unit.movement;
+  // Berserker can always attack; all other units cannot after a full move
+  const canAttack = unit.type === 'berserker' ? true : !isFullMove;
+  const canUseSkill = !isFullMove; // No exceptions for skill use
+
+  return (
+    <View style={styles.menu}>
+      <ActionButton
+        label="Attack"
+        disabled={!canAttack}
+        onPress={handleAttack}
+      />
+      <ActionButton
+        label="Skill"
+        disabled={!canUseSkill}
+        onPress={handleSkill}
+      />
+      <ActionButton label="Wait" onPress={handleWait} />
+    </View>
+  );
+});
+```
+
+### Healer Special Case
+The Healer's **Heal** action follows the same movement rule:
+- Moved 0–1 tiles → Heal available
+- Moved 2 tiles (max) → Heal disabled
+
+Heal range is **radius 1 (6 adjacent tiles only)**. Highlight eligible allies within 1 tile when the Heal action is selected.
+
+```typescript
+// Highlight heal targets
+const healTargets = unit.type === 'healer'
+  ? allies.filter(ally => hexDistance(unit.position, ally.position) === 1)
+  : [];
+```
+
+---
+
+## 6. Animation
+
+### Use react-native-reanimated
 ```typescript
 import Animated, {
   useSharedValue, useAnimatedStyle,
   withTiming, withSequence, withSpring
 } from 'react-native-reanimated';
 
-// ダメージ数値のポップアップ
+// Damage number pop-up
 export const DamageNumber: React.FC<{ damage: number }> = ({ damage }) => {
   const opacity = useSharedValue(1);
   const translateY = useSharedValue(0);
@@ -193,32 +266,33 @@ export const DamageNumber: React.FC<{ damage: number }> = ({ damage }) => {
 
 ---
 
-## 6. カラーパレット
+## 7. Color Palette
 
 ```typescript
 // constants/colors.ts
 export const COLORS = {
-  // 地形
+  // Terrain
   terrain: {
     plain:    '#8DB87A',
     highland: '#A0896B',
     forest:   '#3D6B47',
-    water:    '#4A90D9',
+    water:    '#4A90D9', // Impassable — no unit can enter
     building: '#7A7A8A',
     rubble:   '#8A7A6A',
   },
-  // 陣営
-  player:   '#4A90D9',  // 青
-  enemy:    '#D94A4A',  // 赤
+  // Factions
+  player:   '#4A90D9',  // blue
+  enemy:    '#D94A4A',  // red
   neutral:  '#888888',
-  // UI
-  selected: '#FFD700',
-  reachable: '#00FF88',
+  // UI states
+  selected:   '#FFD700',
+  reachable:  '#00FF88',
   attackable: '#FF6B6B',
-  // テキスト
+  disabled:   '#555555', // for greyed-out action buttons
+  // Text
   text:     '#FFFFFF',
   textDark: '#1A1A2E',
-  // 背景
+  // Backgrounds
   bg:       '#1A1A2E',
   surface:  '#16213E',
   card:     '#0F3460',
@@ -227,20 +301,24 @@ export const COLORS = {
 
 ---
 
-## 7. パフォーマンスチェックリスト
+## 8. Performance Checklist
 
-- [ ] 全コンポーネントに `React.memo()` を適用
-- [ ] イベントハンドラは `useCallback` でメモ化
-- [ ] 重い計算は `useMemo` で結果をキャッシュ
-- [ ] `FlatList` に `keyExtractor` と `getItemLayout` を設定
-- [ ] SVGは `shouldRasterizeIOS` / `renderToHardwareTextureAndroid` を検討
-- [ ] 不要な再レンダリングを `React DevTools` で確認
+- [ ] Apply `React.memo()` to every component
+- [ ] Wrap event handlers with `useCallback`
+- [ ] Cache expensive calculations with `useMemo`
+- [ ] Set `keyExtractor` and `getItemLayout` on all `FlatList` instances
+- [ ] Consider `renderToHardwareTextureAndroid` for SVG-heavy screens
+- [ ] Verify no unnecessary re-renders using React DevTools
 
-## 8. よくある問題
+---
 
-| 問題 | 原因 | 解決策 |
-|-----|------|-------|
-| タッチが反応しない | `overflow: hidden` が伝播を止めている | `hitSlop` を設定する |
-| SVGがぼやける | サイズ指定漏れ | `viewBox` と `width/height` を明示 |
-| キーボードがレイアウトを崩す | `KeyboardAvoidingView` 不足 | 入力フォームに適用 |
-| リストが遅い | `FlatList` 未使用 | `ScrollView` を `FlatList` に変更 |
+## 9. Common Issues
+
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Touch not responding | `overflow: hidden` blocking propagation | Set `hitSlop` |
+| SVG appears blurry | Missing size declaration | Explicitly set `viewBox` and `width`/`height` |
+| Keyboard breaks layout | Missing `KeyboardAvoidingView` | Wrap input forms with it |
+| List scrolling is slow | Using `ScrollView` for long lists | Switch to `FlatList` |
+| Action button active after full move | `canAct` not derived from `movedDistance` | Compute from `movedDistance >= unit.movement` |
+| Water tile reachable | Missing passability check | Check `terrain === 'water'` in pathfinding |
