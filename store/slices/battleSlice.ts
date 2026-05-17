@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { BattleLog } from '@/types/battle';
+import { BattleLog, BattleEvent } from '@/types/battle';
 import { OffsetCoord } from '@/types/map';
 import { ItemSlot, ItemType, ItemUsage } from '@/types/item';
 import { Unit } from '@/types/unit';
@@ -24,6 +24,7 @@ interface BattleState {
     enemy: boolean;
   };
   missionMetadata?: MissionMetadata;
+  pendingBattleEvents: BattleEvent[];
 }
 
 const initialState: BattleState = {
@@ -35,6 +36,7 @@ const initialState: BattleState = {
   teamInventory: { player: [], enemy: [] },
   reserves: { player: [], enemy: [] },
   substitutionUsedThisTurn: { player: false, enemy: false },
+  pendingBattleEvents: [],
 };
 
 const battleSlice = createSlice({
@@ -101,6 +103,15 @@ const battleSlice = createSlice({
     setMissionMetadata: (state, action: PayloadAction<MissionMetadata>) => {
       state.missionMetadata = action.payload;
     },
+    addBattleEvent: (state, action: PayloadAction<BattleEvent>) => {
+      state.pendingBattleEvents.push(action.payload);
+    },
+    consumeBattleEvent: (state) => {
+      state.pendingBattleEvents.shift();
+    },
+    clearBattleEvents: (state) => {
+      state.pendingBattleEvents = [];
+    },
     resetBattle: () => initialState,
   },
 });
@@ -119,6 +130,9 @@ export const {
   executeSubstitution,
   resetSubstitutionFlag,
   setMissionMetadata,
+  addBattleEvent,
+  consumeBattleEvent,
+  clearBattleEvents,
   resetBattle,
 } = battleSlice.actions;
 

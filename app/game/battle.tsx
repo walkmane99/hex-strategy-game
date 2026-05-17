@@ -18,7 +18,6 @@ import {
   initEnemyUnits,
   selectUnit,
   markActed,
-  applyDamage,
   setUnitVisible,
   tickCooldowns,
   substituteUnit,
@@ -37,7 +36,7 @@ import {
   setMissionMetadata,
 } from '@/store/slices/battleSlice';
 import { ItemSlot } from '@/types/item';
-import { endPlayerTurn } from '@/store/slices/gameSlice';
+import { endPlayerTurn, endBattle } from '@/store/slices/gameSlice';
 import TacBracket from '@/components/ui/TacBracket';
 import TacTag from '@/components/ui/TacTag';
 import Meter from '@/components/ui/Meter';
@@ -52,7 +51,9 @@ import { C, MONO, DISPLAY } from '@/constants/theme';
 import { UNIT_BASE_STATS, UNIT_NAMES_JA } from '@/constants/unitStats';
 import { MapCell, OffsetCoord, TerrainType } from '@/types/map';
 import { Unit, UnitType } from '@/types/unit';
-import { AffinityResult, calculateDamage, getEffectiveMovement } from '@/utils/combat';
+import { AffinityResult, getEffectiveMovement } from '@/utils/combat';
+import { performAttack } from '@/utils/battle/performAttack';
+import { checkVictory } from '@/utils/battle/victoryCheck';
 import { computeSupplyStatuses } from '@/utils/ai/perception/supplyLineStatus';
 import { reachableCells } from '@/utils/pathfinding';
 import { offsetDistance } from '@/utils/hexMath';
@@ -168,6 +169,9 @@ export default function TacticsScreen() {
   const reserves = useAppSelector((s) => s.battle.reserves);
   const substitutionUsedThisTurn = useAppSelector((s) => s.battle.substitutionUsedThisTurn);
   const missionMetadata = useAppSelector((s) => s.battle.missionMetadata);
+  const isGameOver = useAppSelector((s) => s.game.isGameOver);
+  const victoryCondition = useAppSelector((s) => s.game.victoryCondition);
+  const turnLimit = useAppSelector((s) => s.game.turnLimit);
 
   const gridRef = useRef<MapCell[][]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -342,25 +346,25 @@ export default function TacticsScreen() {
 
     const targetCell = gridRef.current[target.position.row]?.[target.position.col];
     const terrain = targetCell?.terrain ?? 'plain';
-    const { damage, affinity } = calculateDamage(attacker, target, terrain, 0, 0);
 
-    dispatch(applyDamage({ id: targetId, damage, side: 'enemy' }));
+    const result = performAttack(attacker, target, terrain, 'enemy', dispatch);
+
     dispatch(markActed(attackerId));
     dispatch(clearSelectionCells());
     dispatch(selectUnit(null));
     dispatch(addLog({
       turn: state.game.currentTurn,
       action: { type: 'attack', unitId: attackerId, targetId },
-      damage,
-      result: `${attackerId} hit ${targetId} for ${damage} [${affinity}]`,
+      damage: result.damage,
+      result: `${attackerId} hit ${targetId} for ${result.damage} [${result.affinity}]`,
       timestamp: Date.now(),
     }));
 
     setCombatEvent({
       attackerName: UNIT_NAMES_JA[attacker.type] ?? attacker.type,
       targetName: UNIT_NAMES_JA[target.type] ?? target.type,
-      damage,
-      affinity,
+      damage: result.damage,
+      affinity: result.affinity,
       side: 'player',
     });
 
@@ -433,6 +437,28 @@ export default function TacticsScreen() {
     setShowSubConfirmModal(false);
     runAITurn();
   }, [dispatch, isAnimating, actionPhase, runAITurn]);
+
+  // Victory / defeat check after every unit state change
+  useEffect(() => {
+    if (!isInitialized || isGameOver) return;
+    const outcome = checkVictory(
+      victoryCondition,
+      playerUnits,
+      enemyUnits,
+      currentTurn,
+      turnLimit,
+      missionMetadata,
+    );
+    if (outcome) {
+      dispatch(endBattle({ winner: outcome.winner, reason: outcome.reason }));
+      dispatch(addLog({
+        turn: currentTurn,
+        action: { type: 'skip', unitId: 'system' },
+        result: outcome.winner === 'player' ? `勝利: ${outcome.reason}` : `敗北: ${outcome.reason}`,
+        timestamp: Date.now(),
+      }));
+    }
+  }, [playerUnits, enemyUnits, currentTurn, isInitialized, isGameOver, victoryCondition, turnLimit, missionMetadata, dispatch]);
 
   // Cleanup timer on unmount
   useEffect(() => () => {

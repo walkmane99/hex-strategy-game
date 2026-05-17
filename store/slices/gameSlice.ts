@@ -21,6 +21,7 @@ interface GameState {
   turnLimit: number;
   isGameOver: boolean;
   winner: TurnOwner | 'draw' | null;
+  outcomeReason: string | null;
   isAIThinking: boolean;
 }
 
@@ -33,6 +34,7 @@ const initialState: GameState = {
   turnLimit: 20,
   isGameOver: false,
   winner: null,
+  outcomeReason: null,
   isAIThinking: false,
 };
 
@@ -69,6 +71,17 @@ const gameSlice = createSlice({
       state.winner = action.payload.winner;
       state.phase = 'result';
     },
+    endBattle: (state, action: PayloadAction<{ winner: 'player' | 'enemy' | 'draw'; reason: string }>) => {
+      state.isGameOver = true;
+      state.winner = action.payload.winner;
+      state.outcomeReason = action.payload.reason;
+      state.phase = 'result';
+    },
+    resetGameOutcome: (state) => {
+      state.isGameOver = false;
+      state.winner = null;
+      state.outcomeReason = null;
+    },
     setAIThinking: (state, action: PayloadAction<boolean>) => {
       state.isAIThinking = action.payload;
     },
@@ -82,6 +95,8 @@ export const {
   endPlayerTurn,
   endEnemyTurn,
   setGameOver,
+  endBattle,
+  resetGameOutcome,
   setAIThinking,
   resetGame,
 } = gameSlice.actions;

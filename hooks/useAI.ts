@@ -5,7 +5,6 @@ import {
   playerUnitSelectors,
   enemyUnitSelectors,
   moveUnit,
-  applyDamage,
   resetTurnFlags,
   activateSkill,
   tickCooldowns,
@@ -14,7 +13,7 @@ import {
 } from '@/store/slices/unitSlice';
 import { endEnemyTurn } from '@/store/slices/gameSlice';
 import { addLog, setAnimating, consumeItem, executeSubstitution, resetSubstitutionFlag } from '@/store/slices/battleSlice';
-import { calculateDamage } from '@/utils/combat';
+import { performAttack } from '@/utils/battle/performAttack';
 import { updateGridCell } from '@/utils/ai';
 import { computeSupplyStatuses } from '@/utils/ai/perception/supplyLineStatus';
 import { executeAITurn } from '@/utils/ai/core/AIController';
@@ -98,13 +97,12 @@ export function useAI(gridRef: MutableRefObject<MapCell[][]>): {
 
           const targetCell = gridRef.current[freshTarget.position.row]?.[freshTarget.position.col];
           const terrain = targetCell?.terrain ?? 'plain';
-          const { damage } = calculateDamage(unit, freshTarget, terrain, 0, 0);
-          dispatch(applyDamage({ id: freshTarget.id, damage, side: 'player' }));
+          const result = performAttack(unit, freshTarget, terrain, 'player', dispatch);
           dispatch(addLog({
             turn: currentTurn,
             action: { type: 'attack', unitId: unit.id, targetId: freshTarget.id },
-            damage,
-            result: `${unit.id} hit ${freshTarget.id} for ${damage}`,
+            damage: result.damage,
+            result: `${unit.id} hit ${freshTarget.id} for ${result.damage} [${result.affinity}]`,
             timestamp: Date.now(),
           }));
           await wait(ATTACK_DELAY);

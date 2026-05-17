@@ -27,14 +27,15 @@ export default function UnitToken({
   tokenSize,
   showSupplyLine = false,
 }: UnitTokenProps) {
-  if (unitData.isDead) return null;
-
   const isPlayer = unitData.side === 'player';
   const hpFrac = unitData.currentHP / unitData.stats.maxHP;
   const half = tokenSize / 2;
 
+  const opacity = unitData.isDead ? 0.25 : unitData.hasActed ? 0.5 : 1;
+
   return (
     <View
+      pointerEvents={unitData.isDead ? 'none' : 'auto'}
       style={[
         styles.token,
         {
@@ -43,10 +44,10 @@ export default function UnitToken({
           width: tokenSize,
           height: tokenSize,
           borderRadius: half,
-          backgroundColor: isPlayer ? '#1a2e4a' : '#2e1010',
-          borderColor: isSelected ? C.amber : isPlayer ? '#2e6aad' : '#a03030',
+          backgroundColor: unitData.isDead ? '#1a1a1a' : isPlayer ? '#1a2e4a' : '#2e1010',
+          borderColor: unitData.isDead ? '#444' : isSelected ? C.amber : isPlayer ? '#2e6aad' : '#a03030',
           borderWidth: isSelected ? 2 : 1,
-          opacity: unitData.hasActed ? 0.5 : 1,
+          opacity,
           elevation: isSelected ? 4 : 1,
         },
       ]}

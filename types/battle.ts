@@ -36,3 +36,27 @@ export interface AIAction {
   destination?: OffsetCoord;
   targetId?: string;
 }
+
+export type BattleEvent =
+  | {
+      type: 'attack';
+      attackerId: string;
+      defenderId: string;
+      damage: number;
+      affinity: 'advantage' | 'disadvantage' | 'neutral';
+      isKill: boolean;
+      timestamp: number;
+    }
+  | {
+      type: 'heal';
+      healerId: string;
+      targetId: string;
+      amount: number;
+      timestamp: number;
+    }
+  | {
+      type: 'death';
+      unitId: string;
+      side: 'player' | 'enemy';
+      timestamp: number;
+    };
