@@ -18,5 +18,5 @@ The design medium is **HTML/CSS/JS** — these are prototypes, not production co
 
 ## Bundle contents
 
-- `untitled/README.md` — this file
-- `untitled/project/` — the `戦略ゲーム` project files (HTML prototypes, assets, components)
+- `README.md` — this file
+- `project/` — the `戦略ゲーム` project files (HTML prototypes, assets, components)

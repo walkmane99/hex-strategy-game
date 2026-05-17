@@ -10,7 +10,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppDispatch, useAppSelector } from '@/hooks/redux';
-import { setSelectedSquad } from '@/store/slices/playerSlice';
+import { setSelectedSquad, setSelectedReserve } from '@/store/slices/playerSlice';
 import { UnitType } from '@/types/unit';
 import { UNIT_NAMES_JA, INITIAL_UNITS } from '@/constants/unitStats';
 import { UNIT_CONFIG } from '@/constants/gameConfig';
@@ -281,6 +281,7 @@ export default function UnitSelectScreen() {
           style={styles.nextBtn}
           onPress={() => {
             dispatch(setSelectedSquad(mainUnits));
+            dispatch(setSelectedReserve(reserveUnit ?? null));
             router.push('/game/customize');
           }}
         >

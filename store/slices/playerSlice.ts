@@ -14,6 +14,7 @@ interface PlayerState {
   clearedStages: Record<string, StageResult>;
   isLoaded: boolean;
   selectedSquad: UnitType[];
+  selectedReserveUnitId: string | null; // 予備ユニット種別 (UnitType as string)
 }
 
 const initialState: PlayerState = {
@@ -25,6 +26,7 @@ const initialState: PlayerState = {
   clearedStages: {},
   isLoaded: false,
   selectedSquad: [],
+  selectedReserveUnitId: null,
 };
 
 const playerSlice = createSlice({
@@ -61,6 +63,9 @@ const playerSlice = createSlice({
     setSelectedItems: (state, action: PayloadAction<ItemType[]>) => {
       state.selectedItems = action.payload;
     },
+    setSelectedReserve: (state, action: PayloadAction<string | null>) => {
+      state.selectedReserveUnitId = action.payload;
+    },
     recordStageResult: (state, action: PayloadAction<StageResult>) => {
       const existing = state.clearedStages[action.payload.stageId];
       // ベストスコアを保存
@@ -81,6 +86,7 @@ export const {
   addCustomCharacter,
   setSelectedSquad,
   setSelectedItems,
+  setSelectedReserve,
   recordStageResult,
 } = playerSlice.actions;
 

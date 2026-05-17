@@ -67,25 +67,28 @@ const EmptySlot = React.memo(function EmptySlot() {
 const ItemCard = React.memo(function ItemCard({
   item,
   isPicked,
+  isGreyedOut,
   onPress,
 }: {
   item: Item;
   isPicked: boolean;
+  isGreyedOut: boolean;
   onPress: () => void;
 }) {
   const isLocked = 'locked' in item && item.locked;
+  const isDisabled = !!isLocked || isGreyedOut;
   const haveColor = item.have > 0 ? C.amber : C.ink3;
 
   return (
     <Pressable
       onPress={onPress}
-      disabled={!!isLocked}
+      disabled={isDisabled}
       style={[
         styles.itemCard,
         {
           borderColor: isPicked ? C.amber : C.line,
           backgroundColor: isPicked ? '#2a1a08' : C.bg1,
-          opacity: isLocked ? 0.4 : 1,
+          opacity: isDisabled ? 0.4 : 1,
         },
       ]}
     >
@@ -157,15 +160,20 @@ export default function ItemScreen() {
 
         {/* Item grid */}
         <View style={styles.itemGrid}>
-          {ITEMS.map((item, index) => (
-            <View key={item.id} style={{ width: cardWidth }}>
-              <ItemCard
-                item={item}
-                isPicked={picked.includes(item.id)}
-                onPress={() => toggleItem(item.id)}
-              />
-            </View>
-          ))}
+          {ITEMS.map((item) => {
+            const isPicked = picked.includes(item.id);
+            const isGreyedOut = picked.length >= MAX_ITEMS && !isPicked;
+            return (
+              <View key={item.id} style={{ width: cardWidth }}>
+                <ItemCard
+                  item={item}
+                  isPicked={isPicked}
+                  isGreyedOut={isGreyedOut}
+                  onPress={() => toggleItem(item.id)}
+                />
+              </View>
+            );
+          })}
         </View>
 
         <View style={{ height: 80 }} />

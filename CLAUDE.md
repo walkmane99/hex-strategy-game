@@ -296,9 +296,9 @@ units: Unit[]  // 検索O(n)になる
 
 | 実装内容 | 参照スキル |
 |---------|-----------|
-| ゲームロジック (戦闘・AI・索敵) | `skills/game/SKILL.md` |
-| React Native コンポーネント作成 | `skills/components/SKILL.md` |
-| Redux・状態管理・データフロー | `skills/systems/SKILL.md` |
+| ゲームロジック (戦闘・AI・索敵) | `.claude/skills/game/SKILL.md` |
+| React Native コンポーネント作成 | `.claude/skills/components/SKILL.md` |
+| Redux・状態管理・データフロー | `.claude/skills/systems/SKILL.md` |
 
 ## 画面について
 下記を参照のこと

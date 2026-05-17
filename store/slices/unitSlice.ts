@@ -123,6 +123,19 @@ const unitSlice = createSlice({
       enemyAdapter.removeOne(state.enemyUnits, removedUnitId);
       enemyAdapter.addOne(state.enemyUnits, { ...newUnit, position, hasActed: true, side: 'enemy' });
     },
+    substituteUnit: (
+      state,
+      action: PayloadAction<{ side: 'player' | 'enemy'; removedUnitId: string; newUnit: Unit; position: OffsetCoord }>,
+    ) => {
+      const { side, removedUnitId, newUnit, position } = action.payload;
+      if (side === 'player') {
+        playerAdapter.removeOne(state.playerUnits, removedUnitId);
+        playerAdapter.addOne(state.playerUnits, { ...newUnit, position, hasActed: true, side: 'player' });
+      } else {
+        enemyAdapter.removeOne(state.enemyUnits, removedUnitId);
+        enemyAdapter.addOne(state.enemyUnits, { ...newUnit, position, hasActed: true, side: 'enemy' });
+      }
+    },
     tickCooldowns: (state, action: PayloadAction<'player' | 'enemy'>) => {
       const adapter = action.payload === 'player' ? state.playerUnits : state.enemyUnits;
       Object.values(adapter.entities).forEach(unit => {
@@ -151,6 +164,7 @@ export const {
   activateSkill,
   tickCooldowns,
   substituteEnemy,
+  substituteUnit,
 } = unitSlice.actions;
 
 // セレクター

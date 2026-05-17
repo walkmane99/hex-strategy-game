@@ -21,6 +21,7 @@ import {
   applyDamage,
   setUnitVisible,
   tickCooldowns,
+  substituteUnit,
 } from '@/store/slices/unitSlice';
 import {
   setReachableCells,
@@ -29,16 +30,22 @@ import {
   setAnimating,
   addLog,
   setTeamInventory,
+  setReserves,
+  executeSubstitution,
+  resetSubstitutionFlag,
 } from '@/store/slices/battleSlice';
 import { ItemSlot } from '@/types/item';
 import { endPlayerTurn } from '@/store/slices/gameSlice';
 import TacBracket from '@/components/ui/TacBracket';
 import TacTag from '@/components/ui/TacTag';
 import Meter from '@/components/ui/Meter';
+import Modal from '@/components/ui/Modal';
 import UnitGlyph from '@/components/units/UnitGlyph';
 import HexMapView from '@/components/hex/HexMapView';
 import HexOverlayView from '@/components/battle/HexOverlayView';
 import GameEngineView from '@/components/battle/GameEngineView';
+import ReservePanel from '@/components/battle/ReservePanel';
+import MissionStartOverlay from '@/components/battle/MissionStartOverlay';
 import { C, MONO, DISPLAY } from '@/constants/theme';
 import { UNIT_BASE_STATS, UNIT_NAMES_JA } from '@/constants/unitStats';
 import { MapCell, OffsetCoord, TerrainType } from '@/types/map';
@@ -155,6 +162,9 @@ export default function TacticsScreen() {
   const phase = useAppSelector((s) => s.game.phase);
   const selectedSquad = useAppSelector((s) => s.player.selectedSquad);
   const selectedItems = useAppSelector((s) => s.player.selectedItems);
+  const selectedReserveUnitId = useAppSelector((s) => s.player.selectedReserveUnitId);
+  const reserves = useAppSelector((s) => s.battle.reserves);
+  const substitutionUsedThisTurn = useAppSelector((s) => s.battle.substitutionUsedThisTurn);
 
   const gridRef = useRef<MapCell[][]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -163,6 +173,10 @@ export default function TacticsScreen() {
   const [attackableEnemyIds, setAttackableEnemyIds] = useState<Set<string>>(new Set());
   const [combatEvent, setCombatEvent] = useState<CombatEvent | null>(null);
   const combatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isSubstitutionMode, setIsSubstitutionMode] = useState(false);
+  const [subTargetId, setSubTargetId] = useState<string | null>(null);
+  const [showSubConfirmModal, setShowSubConfirmModal] = useState(false);
+  const [showMissionStart, setShowMissionStart] = useState(true);
 
   const { runAITurn } = useAI(gridRef);
 
@@ -191,8 +205,20 @@ export default function TacticsScreen() {
     ];
     dispatch(setTeamInventory({ player: playerItemSlots, enemy: enemyItemSlots }));
 
+    // 予備ユニット初期化
+    const reserveType = selectedReserveUnitId as UnitType | null;
+    const playerReserveUnit = reserveType
+      ? makeUnit('p-reserve', reserveType, 'player', { col: 0, row: 0 })
+      : null;
+    // TODO: ステージ定義に enemyReserve フィールドが追加されたらここをステージデータから取得する
+    const enemyReserveUnit = makeUnit('e-reserve', 'attacker', 'enemy', { col: 0, row: 0 });
+    dispatch(setReserves({
+      player: playerReserveUnit ? [playerReserveUnit] : [],
+      enemy: [enemyReserveUnit],
+    }));
+
     setIsInitialized(true);
-  }, [dispatch, selectedSquad, selectedItems]);
+  }, [dispatch, selectedSquad, selectedItems, selectedReserveUnitId]);
 
   // Scouting: update enemy visibility at turn start
   const updateVisibility = useCallback(() => {
@@ -251,10 +277,18 @@ export default function TacticsScreen() {
 
   const handleSelectionChange = useCallback(
     (unitId: string | null) => {
-      if (actionPhase === 'attack_ready') return; // lock selection during attack phase
+      if (actionPhase === 'attack_ready') return;
+      if (isSubstitutionMode && unitId) {
+        const unit = playerUnits.find(u => u.id === unitId);
+        if (unit && !unit.hasActed && !unit.isDead) {
+          setSubTargetId(unitId);
+          setShowSubConfirmModal(true);
+        }
+        return;
+      }
       dispatch(selectUnit(unitId));
     },
-    [dispatch, actionPhase]
+    [dispatch, actionPhase, isSubstitutionMode, playerUnits]
   );
 
   // Called by GameEngineView after player move animation completes
@@ -334,6 +368,43 @@ export default function TacticsScreen() {
     setAttackableEnemyIds(new Set());
   }, [pendingAttackUnitId, dispatch]);
 
+  const handleEnterSubstitutionMode = useCallback(() => {
+    dispatch(selectUnit(null));
+    dispatch(clearSelectionCells());
+    setIsSubstitutionMode(true);
+  }, [dispatch]);
+
+  const handleSubstitutionConfirm = useCallback(() => {
+    if (!subTargetId) return;
+    const state = store.getState();
+    const target = playerUnitSelectors.selectById(state, subTargetId);
+    const reserve = state.battle.reserves.player[0];
+    if (!target || !reserve) return;
+
+    dispatch(substituteUnit({
+      side: 'player',
+      removedUnitId: subTargetId,
+      newUnit: reserve,
+      position: target.position,
+    }));
+    dispatch(executeSubstitution('player'));
+    dispatch(addLog({
+      turn: state.game.currentTurn,
+      action: { type: 'swap_reserve', unitId: subTargetId, targetId: reserve.id },
+      result: `${UNIT_NAMES_JA[target.type]} が ${UNIT_NAMES_JA[reserve.type]} と交代した`,
+      timestamp: Date.now(),
+    }));
+    setIsSubstitutionMode(false);
+    setSubTargetId(null);
+    setShowSubConfirmModal(false);
+  }, [subTargetId, dispatch, store]);
+
+  const handleSubstitutionCancel = useCallback(() => {
+    setSubTargetId(null);
+    setShowSubConfirmModal(false);
+    setIsSubstitutionMode(false);
+  }, []);
+
   const handleEndTurn = useCallback(() => {
     if (isAnimating || actionPhase === 'attack_ready') return;
     dispatch(selectUnit(null));
@@ -342,6 +413,9 @@ export default function TacticsScreen() {
     setActionPhase('select');
     setPendingAttackUnitId(null);
     setAttackableEnemyIds(new Set());
+    setIsSubstitutionMode(false);
+    setSubTargetId(null);
+    setShowSubConfirmModal(false);
     runAITurn();
   }, [dispatch, isAnimating, actionPhase, runAITurn]);
 
@@ -353,6 +427,20 @@ export default function TacticsScreen() {
   const selectedUnit = selectedUnitId
     ? [...playerUnits, ...enemyUnits].find((u) => u.id === selectedUnitId)
     : undefined;
+
+  const playerReserve = reserves.player[0] ?? null;
+  const enemyReserve = reserves.enemy[0] ?? null;
+  const canSwap =
+    phase === 'player_turn' &&
+    !substitutionUsedThisTurn.player &&
+    reserves.player.length > 0;
+
+  const subTarget = subTargetId
+    ? playerUnits.find(u => u.id === subTargetId)
+    : undefined;
+  const subModalMessage = subTarget && playerReserve
+    ? `${UNIT_NAMES_JA[subTarget.type]} を予備の ${UNIT_NAMES_JA[playerReserve.type]} と交代します。\n${UNIT_NAMES_JA[playerReserve.type]} はこのターン行動できません。よろしいですか？`
+    : '';
 
   const pad = 6;
   const r = 18;
@@ -404,7 +492,7 @@ export default function TacticsScreen() {
 
       {/* Map area (3-layer stack) */}
       <View style={[styles.mapWrap, { paddingHorizontal: 8 }]}>
-        <View style={{ width: mapWidth, height: mapHeight }}>
+        <View style={{ width: mapWidth, height: mapHeight, overflow: 'hidden' }}>
           <HexMapView
             width={mapWidth}
             showFog={true}
@@ -434,6 +522,12 @@ export default function TacticsScreen() {
             onMoveComplete={handleMoveComplete}
             onAttackEnemy={handleAttackEnemy}
           />
+          {showMissionStart && (
+            <MissionStartOverlay
+              accent={C.amber}
+              onComplete={() => setShowMissionStart(false)}
+            />
+          )}
         </View>
       </View>
 
@@ -441,6 +535,13 @@ export default function TacticsScreen() {
       {actionPhase === 'attack_ready' && (
         <View style={styles.attackBanner}>
           <Text style={styles.attackBannerText}>⚔ 攻撃フェーズ · 敵ユニットをタップして攻撃</Text>
+        </View>
+      )}
+
+      {/* Substitution mode banner */}
+      {isSubstitutionMode && (
+        <View style={styles.subBanner}>
+          <Text style={styles.subBannerText}>↔ 交代フェーズ · 交代する自軍ユニットをタップ</Text>
         </View>
       )}
 
@@ -523,6 +624,9 @@ export default function TacticsScreen() {
         )}
       </View>
 
+      {/* Reserve panel (常に表示, 仕様書 10.6) */}
+      <ReservePanel playerReserve={playerReserve} enemyReserve={enemyReserve} />
+
       {/* Action bar */}
       <View style={styles.actionBar}>
         {actionPhase === 'attack_ready' ? (
@@ -548,6 +652,24 @@ export default function TacticsScreen() {
               <Text style={[styles.endTurnJa, isAnimating && { color: C.ink3 }]}>ターン終了</Text>
               <Text style={[styles.endTurnEn, isAnimating && { color: C.ink3 }]}>END TURN</Text>
             </Pressable>
+            {canSwap && !isSubstitutionMode && (
+              <Pressable
+                style={styles.swapBtn}
+                onPress={handleEnterSubstitutionMode}
+                disabled={isAnimating}
+              >
+                <Text style={styles.swapBtnJa}>交　代</Text>
+                <Text style={styles.swapBtnEn}>SWAP</Text>
+              </Pressable>
+            )}
+            {isSubstitutionMode && (
+              <Pressable
+                style={styles.swapCancelBtn}
+                onPress={handleSubstitutionCancel}
+              >
+                <Text style={styles.swapCancelLabel}>キャンセル</Text>
+              </Pressable>
+            )}
             <View style={styles.turnInfo}>
               <TacTag color={C.cyan}>
                 {playerUnits.filter((u) => !u.hasActed && !u.isDead).length} UNITS READY
@@ -556,6 +678,16 @@ export default function TacticsScreen() {
           </>
         )}
       </View>
+      {/* Substitution confirmation modal */}
+      <Modal
+        visible={showSubConfirmModal}
+        title="交代 / SWAP"
+        message={subModalMessage}
+        cancelLabel="キャンセル"
+        confirmLabel="交代する"
+        onCancel={handleSubstitutionCancel}
+        onConfirm={handleSubstitutionConfirm}
+      />
     </SafeAreaView>
   );
 }
@@ -841,6 +973,57 @@ const styles = StyleSheet.create({
     fontFamily: MONO,
     fontSize: 9,
     color: C.cyan,
+  },
+  swapBtn: {
+    borderWidth: 1,
+    borderColor: C.amber,
+    backgroundColor: '#1a0d00',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    gap: 2,
+  },
+  swapBtnJa: {
+    fontFamily: DISPLAY,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 2,
+    color: C.amber,
+  },
+  swapBtnEn: {
+    fontFamily: MONO,
+    fontSize: 9,
+    color: C.amber,
+  },
+  swapCancelBtn: {
+    borderWidth: 1,
+    borderColor: C.line,
+    backgroundColor: C.bg1,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  swapCancelLabel: {
+    fontFamily: MONO,
+    fontSize: 10,
+    color: C.ink2,
+  },
+  subBanner: {
+    marginHorizontal: 12,
+    marginBottom: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#1a0d00',
+    borderWidth: 1,
+    borderColor: C.amber,
+  },
+  subBannerText: {
+    fontFamily: MONO,
+    fontSize: 10,
+    color: C.amber,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   turnInfo: {
     flex: 1,
