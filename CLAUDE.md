@@ -16,61 +16,83 @@
 
 ```
 hex-strategy-game/
-├── app/                    # Expo Router ページ (file-based routing)
-│   ├── _layout.tsx         # ルートレイアウト
-│   ├── index.tsx           # タイトル画面
-│   ├── tabs/               # タブナビゲーション
-│   │   ├── _layout.tsx
-│   │   ├── home.tsx        # ホーム
-│   │   └── collection.tsx  # キャラクターコレクション
-│   └── game/               # ゲーム画面
+├── app/                        # Expo Router ページ (file-based routing)
+│   ├── _layout.tsx             # ルートレイアウト
+│   ├── index.tsx               # タイトル画面
+│   └── game/                   # ゲーム画面
 │       ├── _layout.tsx
-│       ├── stage-select.tsx # ステージ選択
-│       ├── strategy.tsx    # 戦略フェーズ
-│       └── battle.tsx      # 戦術フェーズ
-├── components/             # 再利用可能コンポーネント
-│   ├── hex/                # 6角形グリッド関連
-│   │   ├── HexGrid.tsx     # グリッド本体
-│   │   ├── HexCell.tsx     # 個別セル
-│   │   └── HexPath.tsx     # 移動経路表示
-│   ├── units/              # ユニット関連
-│   │   ├── UnitCard.tsx    # ユニットカード
-│   │   ├── UnitStats.tsx   # ステータス表示
-│   │   └── UnitSprite.tsx  # ユニットスプライト
-│   ├── battle/             # 戦闘関連
-│   │   ├── BattleHUD.tsx   # バトルHUD
-│   │   ├── ActionMenu.tsx  # アクションメニュー
-│   │   └── DamageNumber.tsx
-│   └── ui/                 # 汎用UI
-│       ├── Button.tsx
-│       ├── Modal.tsx
-│       └── ProgressBar.tsx
-├── hooks/                  # カスタムフック
-│   ├── useHexGrid.ts       # グリッドロジック
-│   ├── useBattle.ts        # 戦闘ロジック
-│   ├── useUnit.ts          # ユニット操作
-│   └── useAI.ts            # AI行動決定
-├── store/                  # Redux ストア
+│       ├── stage-select.tsx    # ステージ選択
+│       ├── strategy.tsx        # 戦略フェーズ（部隊編成）
+│       ├── customize.tsx       # カスタマイズフェーズ
+│       ├── items.tsx           # アイテム選択
+│       ├── battle.tsx          # 戦術フェーズ
+│       └── result.tsx          # 戦闘結果
+├── components/                 # 再利用可能コンポーネント
+│   ├── hex/                    # 6角形グリッド関連
+│   │   └── HexMapView.tsx      # グリッド描画本体
+│   ├── units/                  # ユニット関連
+│   │   └── UnitGlyph.tsx       # ユニットアイコン表示
+│   ├── battle/                 # 戦闘関連
+│   │   ├── GameEngineView.tsx  # ゲームエンジン描画
+│   │   ├── HexOverlayView.tsx  # ヘックスオーバーレイ
+│   │   ├── MissionStartOverlay.tsx # ミッション開始演出
+│   │   ├── ReservePanel.tsx    # 予備ユニットパネル
+│   │   ├── UnitToken.tsx       # ユニットトークン
+│   │   └── types.ts            # 戦闘コンポーネント型定義
+│   └── ui/                     # 汎用UI
+│       ├── CapRow.tsx
+│       ├── Meter.tsx
+│       ├── Modal.tsx           # 確認ダイアログ
+│       ├── PhoneTopBar.tsx
+│       ├── TacBracket.tsx
+│       ├── TacBtn.tsx
+│       ├── TacHeader.tsx
+│       └── TacTag.tsx
+├── hooks/                      # カスタムフック
+│   ├── redux.ts                # typed useAppSelector/useAppDispatch
+│   └── useAI.ts                # AI行動決定
+├── store/                      # Redux ストア
 │   ├── index.ts
 │   └── slices/
-│       ├── gameSlice.ts    # ゲーム状態
-│       ├── unitSlice.ts    # ユニット状態
-│       ├── battleSlice.ts  # 戦闘状態
-│       └── playerSlice.ts  # プレイヤーデータ
-├── types/                  # TypeScript 型定義
+│       ├── gameSlice.ts        # ゲーム状態
+│       ├── unitSlice.ts        # ユニット状態（正規化）
+│       ├── battleSlice.ts      # 戦闘状態・交代フラグ
+│       └── playerSlice.ts      # プレイヤーデータ・編成選択
+├── systems/                    # ゲームシステム
+│   ├── MovementSystem.ts       # 移動ロジック
+│   └── TouchSystem.ts          # タッチ入力処理
+├── providers/                  # React コンテキストプロバイダー
+│   └── DatabaseProvider.tsx    # DB 初期化プロバイダー
+├── db/                         # データベース (Drizzle ORM)
+│   ├── client.ts
+│   ├── index.ts
+│   ├── migrate.ts
+│   ├── schema.ts
+│   ├── seed.ts
+│   └── queries/
+│       ├── items.ts
+│       ├── player.ts
+│       ├── stages.ts
+│       └── units.ts
+├── types/                      # TypeScript 型定義
 │   ├── unit.ts
 │   ├── map.ts
 │   ├── battle.ts
-│   └── item.ts
-├── utils/                  # ユーティリティ関数
-│   ├── hexMath.ts          # 6角形座標計算
-│   ├── combat.ts           # 戦闘計算
-│   ├── pathfinding.ts      # 経路探索
-│   └── ai/                 # AI ロジック（ディレクトリ）
+│   ├── item.ts
+│   └── mission.ts
+├── utils/                      # ユーティリティ関数
+│   ├── hexMath.ts              # 6角形座標計算
+│   ├── combat.ts               # 戦闘計算
+│   ├── pathfinding.ts          # 経路探索
+│   ├── pixelToHex.ts           # 画面座標→ヘックス変換
+│   ├── scout.ts                # 索敵ユーティリティ
+│   ├── ai.ts                   # AI エントリポイント
+│   └── ai/                     # AI ロジック（ディレクトリ）
 │       ├── core/
 │       │   ├── AIController.ts
-│       │   ├── types.ts
-│       │   └── generateCandidates.ts
+│       │   ├── AIDecisionEngine.ts
+│       │   ├── tieBreaker.ts
+│       │   └── types.ts
 │       ├── scoring/
 │       │   ├── attackScore.ts
 │       │   ├── movementScore.ts
@@ -81,34 +103,58 @@ hex-strategy-game/
 │       │   ├── itemUsage.ts
 │       │   ├── skillUsage.ts
 │       │   ├── groupTactics.ts
-│       │   └── substitution.ts
+│       │   ├── substitution.ts
+│       │   ├── missionAdjust.ts
+│       │   ├── supplyLine.ts
+│       │   └── types.ts
 │       ├── perception/
-│       │   └── probabilityMap.ts
-│       └── data/
-│           └── scoreWeights.ts
-├── constants/              # 定数
-│   ├── gameConfig.ts       # ゲーム設定値
-│   ├── unitStats.ts        # ユニット基本値
-│   ├── terrain.ts          # 地形定義
-│   └── aiThresholds.ts     # AI判断閾値定数
-├── data/                   # ゲームデータ (JSON)
-│   ├── units/              # ユニットデータ
-│   ├── maps/               # マップデータ
-│   └── items/              # アイテムデータ
-├── assets/                 # 静的アセット
-│   ├── images/
-│   └── sounds/
-├── skills/                 # Claude Code スキル定義
-│   ├── game/SKILL.md       # ゲームロジック実装ガイド
-│   ├── components/SKILL.md # コンポーネント作成ガイド
-│   └── systems/SKILL.md    # システム実装ガイド
+│       │   ├── probabilityMap.ts
+│       │   ├── threatMap.ts
+│       │   └── visibilityMap.ts
+│       ├── data/
+│       │   ├── scoreWeights.ts
+│       │   └── unitAffinityTable.ts
+│       └── __tests__/          # AI ユニットテスト
+│           ├── aiBehavior.test.ts
+│           ├── scoring.test.ts
+│           ├── phase4.test.ts
+│           ├── phase5.test.ts
+│           ├── phase6.test.ts
+│           ├── phase7.test.ts
+│           ├── phase8a.test.ts
+│           └── fixtures/
+│               ├── healerPriority.ts
+│               └── lowHpRetreat.ts
+├── __tests__/                  # 統合テスト
+│   ├── battle-substitution.test.tsx
+│   ├── strategy-items-limit.test.tsx
+│   └── strategy-roster-reserve.test.tsx
+├── constants/                  # 定数
+│   ├── gameConfig.ts           # ゲーム設定値
+│   ├── unitStats.ts            # ユニット基本値
+│   ├── terrain.ts              # 地形定義
+│   ├── aiThresholds.ts         # AI判断閾値定数
+│   ├── theme.ts                # デザイントークン (colors, fonts)
+│   └── index.ts                # re-export
+├── data/                       # ゲームデータ (JSON)
+│   ├── units/
+│   ├── maps/
+│   └── items/
+├── assets/                     # 静的アセット
+│   └── images/
 ├── .claude/
-│   └── settings.json       # Claude Code 設定
-├── app.json                # Expo 設定
+│   ├── settings.json           # Claude Code 設定
+│   └── skills/                 # Claude Code スキル定義
+│       ├── game/SKILL.md       # ゲームロジック実装ガイド
+│       ├── components/SKILL.md # コンポーネント作成ガイド
+│       └── systems/SKILL.md    # システム実装ガイド
+├── drizzle.config.ts           # Drizzle ORM 設定
+├── expo-env.d.ts
+├── app.json                    # Expo 設定
 ├── package.json
 ├── tsconfig.json
 ├── babel.config.js
-└── CLAUDE.md               # このファイル
+└── CLAUDE.md                   # このファイル
 ```
 
 ---
