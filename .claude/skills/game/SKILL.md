@@ -10,6 +10,7 @@
   - `scoring/targetPriority.ts`, `unitSpecific.ts`, `itemUsage.ts`, `skillUsage.ts`
   - `scoring/groupTactics.ts`, `substitution.ts`
   - `perception/probabilityMap.ts`
+  - `perception/visibilityMap.ts` — **3-state fog of war** (unexplored / visible / explored)
   - `data/scoreWeights.ts`
 - `hooks/useBattle.ts` — Battle phase hook
 - `hooks/useHexGrid.ts` — Grid operation hook
@@ -389,7 +390,178 @@ export const ASSASSIN_DISTANCE_MODIFIER = { ... };
 
 ---
 
-## 5. Implementation Checklist
+## 5. Fog of War & Visibility System (visibilityMap.ts)
+
+### Overview: Two-tier Visibility
+
+| Tier | Range | Purpose |
+|------|-------|---------|
+| **Display visibility** (fog reveal) | 5 tiles (`FOG_VISIBLE_RANGE`) | Controls tile render state (dark / bright) |
+| **Tactical visibility** (scouting) | 1–2 tiles (scout stat dependent) | Determines if an enemy unit is "found" and targetable |
+
+Highland's scouting +1 applies only to **tactical visibility**, not display visibility.
+
+### Tile Visibility States
+
+```typescript
+export type TileVisibilityState = 'unexplored' | 'visible' | 'explored';
+
+// Stored in battleSlice
+// tileVisibility: Record<string, TileVisibilityState>
+// Key format: `${col},${row}`
+```
+
+| State | Render | Condition |
+|-------|--------|-----------|
+| `unexplored` | Black (terrain hidden) | Never entered any friendly unit's display range |
+| `visible` | Bright (normal render) | Within 5 tiles of at least one friendly unit this turn |
+| `explored` | Dim (terrain shown, units hidden) | Was `visible` before, now out of display range |
+
+### Core Functions
+
+```typescript
+import { FOG_VISIBLE_RANGE } from '@/constants/gameConfig';
+
+/**
+ * Called every turn start. Updates tileVisibility in-place.
+ * - All tiles within FOG_VISIBLE_RANGE of any friendly unit → 'visible'
+ * - Previously 'visible' tiles now outside range → 'explored'
+ * - Never downgrades 'explored' to 'unexplored'
+ */
+export function updateTileVisibility(
+  current: Record<string, TileVisibilityState>,
+  playerUnitPositions: OffsetCoord[],
+  gridBounds: { width: number; height: number }
+): Record<string, TileVisibilityState> {
+  const next = { ...current };
+
+  // Downgrade visible → explored first
+  for (const key of Object.keys(next)) {
+    if (next[key] === 'visible') next[key] = 'explored';
+  }
+
+  // Upgrade to visible: all tiles within FOG_VISIBLE_RANGE of any player unit
+  for (const pos of playerUnitPositions) {
+    const cube = offsetToCube(pos);
+    const range = hexRange(cube, FOG_VISIBLE_RANGE);
+    for (const c of range) {
+      const offset = cubeToOffset(c);
+      if (offset.col < 0 || offset.col >= gridBounds.width) continue;
+      if (offset.row < 0 || offset.row >= gridBounds.height) continue;
+      next[`${offset.col},${offset.row}`] = 'visible';
+    }
+  }
+
+  return next;
+}
+
+/**
+ * Returns true if the given enemy unit should be treated as stealth
+ * (hidden from the player) based on tile visibility + terrain.
+ */
+export function isUnitStealthInExplored(
+  unitPos: OffsetCoord,
+  tileVisibility: Record<string, TileVisibilityState>,
+  terrain: TerrainType
+): boolean {
+  const key = `${unitPos.col},${unitPos.row}`;
+  const state = tileVisibility[key] ?? 'unexplored';
+
+  if (state === 'visible') return false;           // Always shown in visible range
+  // In explored or unexplored: stealth if terrain provides concealment
+  const stealthTerrain: TerrainType[] = ['forest', 'building', 'highland', 'rubble'];
+  return stealthTerrain.includes(terrain);
+}
+```
+
+### Last Known Position (Ghost Marker)
+
+When an enemy moves from `visible` to `explored` and becomes stealth, record its last known position:
+
+```typescript
+export interface LastKnownPosition {
+  unitId: string;
+  unitType: UnitType;
+  position: OffsetCoord;
+  turnLastSeen: number;
+}
+
+/**
+ * Returns units that just entered stealth (visible → explored transition).
+ * Only units on plain / water-adjacent tiles get a ghost marker.
+ * Units that vanished into forest/building get no ghost (disappeared into cover).
+ */
+export function computeNewGhosts(
+  previouslyVisible: Set<string>,   // unitIds visible last turn
+  nowStealthUnits: EnemyUnit[],      // enemy units that are now stealth
+  terrain: (pos: OffsetCoord) => TerrainType,
+  currentTurn: number
+): LastKnownPosition[] {
+  const PLAIN_GHOST_TERRAIN: TerrainType[] = ['plain'];
+
+  return nowStealthUnits
+    .filter(u => previouslyVisible.has(u.id))
+    .filter(u => PLAIN_GHOST_TERRAIN.includes(terrain(u.position)))
+    .map(u => ({
+      unitId: u.id,
+      unitType: u.type,
+      position: u.position,
+      turnLastSeen: currentTurn,
+    }));
+}
+```
+
+### Probability Map Integration
+
+When a unit enters stealth in explored terrain, trigger probability re-spread:
+
+```typescript
+// In probabilityMap.ts — call after stealth reentry events
+export function respreadFromLastKnown(
+  map: ProbabilityMap,
+  ghost: LastKnownPosition,
+  unitMovement: number,
+  grid: GameGrid
+): ProbabilityMap {
+  const next = { ...map };
+  const key = `${ghost.position.col},${ghost.position.row}`;
+
+  // 1. Pin probability 1.0 at last known position
+  next[key] = 1.0;
+
+  // 2. Spread outward by movement range, blocked by water/walls
+  // (use existing spread logic with radius = unitMovement)
+
+  // 3. Re-pin: remove water tiles, normalize
+  return next;
+}
+```
+
+### safetyScore Integration
+
+```typescript
+// In scoring/safetyScore.ts — add out-of-sight terrain bonus for AI retreat
+import { isUnitStealthInExplored } from '@/utils/ai/perception/visibilityMap';
+
+// Bonus for moving to explored dark terrain (concealment incentive)
+if (isUnitStealthInExplored(targetTile, tileVisibility, terrain)) {
+  score += weights.outOfSightBonus * (1 - hpRatio); // Scale by HP: more incentive when wounded
+}
+```
+
+Add to `constants/aiThresholds.ts`:
+```typescript
+export const OUT_OF_SIGHT_BONUS = 20; // Base score for retreating into explored dark terrain
+```
+
+Add to `data/scoreWeights.ts`:
+```typescript
+outOfSightBonus: OUT_OF_SIGHT_BONUS,
+```
+
+---
+
+## 6. Implementation Checklist
 
 Before starting any implementation:
 
@@ -400,10 +572,13 @@ Before starting any implementation:
 - [ ] Handle edge cases: out-of-grid, HP = 0, movement = 0, full-move no-attack
 - [ ] Water tiles must be blocked in `isPassable` before any other terrain logic
 - [ ] All AI numeric thresholds must live in `constants/aiThresholds.ts`
+- [ ] Call `updateTileVisibility` at the **start** of every player turn (after unit positions are set)
+- [ ] Call `isUnitStealthInExplored` before rendering any enemy unit token or generating AI attack candidates
+- [ ] Ghost markers (`lastKnownPositions`) must be cleared when the enemy unit becomes `visible` again
 
 ---
 
-## 6. Common Bugs and Fixes
+## 7. Common Bugs and Fixes
 
 | Bug | Cause | Fix |
 |-----|-------|-----|
@@ -415,3 +590,6 @@ Before starting any implementation:
 | Water tile is reachable | Missing passability check | Add `if (terrain === 'water') return false` as first line of `isPassable` |
 | Assassin always detected | Ignoring distance / unit modifier | Use `checkAssassinDetection` with all three components |
 | AI imports from wrong path | Using `utils/ai.ts` instead of `utils/ai/` | Import from `utils/ai/core/...`, `utils/ai/scoring/...` etc. |
+| Enemy visible after entering explored forest | Missing stealth-in-explored check | Call `isUnitStealthInExplored` before rendering enemy tokens |
+| Ghost marker not cleared | Enemy became visible but `lastKnownPositions` not updated | Clear entry from `lastKnownPositions` in `clearLastKnownPosition` reducer |
+| Tactical vs display range confused | Using `FOG_VISIBLE_RANGE` for attack targeting | Display range (5) ≠ tactical range (1–2). Keep them separate |

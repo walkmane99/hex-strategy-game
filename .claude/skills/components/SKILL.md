@@ -49,13 +49,23 @@ function hexCorners(cx: number, cy: number, size: number): string {
     .join(' ');
 }
 
+// Tile visibility: 'unexplored' | 'visible' | 'explored'
+// isGhost: true when this tile has a last-known-position ghost marker
 export const HexCell: React.FC<HexCellProps> = React.memo(({
-  hex, terrain, unit, isSelected, isReachable, isVisible, onPress
+  hex, terrain, unit, isSelected, isReachable, visibility, isGhost, onPress
 }) => {
   const { x, y } = hexToPixel(hex);
-  const fill = getTerrainColor(terrain, isVisible);
+
+  // Terrain fill changes by visibility state
+  const fill = getTerrainColor(terrain, visibility);
   const stroke = isSelected ? '#FFD700' : isReachable ? '#00FF88' : '#444';
   const strokeWidth = isSelected || isReachable ? 2 : 0.5;
+
+  // In 'unexplored', render black — terrain shape still drawn for grid consistency
+  // In 'explored', render dim terrain — no enemy unit tokens
+  // In 'visible', render normally — all units shown
+  const showUnit = unit && visibility === 'visible';
+  const showGhost = isGhost && visibility === 'explored';
 
   return (
     <G onPress={() => onPress(hex)}>
@@ -65,10 +75,28 @@ export const HexCell: React.FC<HexCellProps> = React.memo(({
         stroke={stroke}
         strokeWidth={strokeWidth}
       />
-      {unit && <UnitIcon x={x} y={y} unit={unit} />}
+      {showUnit && <UnitIcon x={x} y={y} unit={unit} />}
+      {showGhost && <GhostIcon x={x} y={y} />}
     </G>
   );
 });
+```
+
+### Ghost Icon (Last Known Position Marker)
+```typescript
+// Rendered on explored plain tiles where an enemy was last seen
+export const GhostIcon: React.FC<{ x: number; y: number }> = ({ x, y }) => (
+  <Text
+    x={x} y={y}
+    fontSize={18}
+    textAnchor="middle"
+    alignmentBaseline="central"
+    opacity={0.45}
+    fill="#FF6B6B"
+  >
+    ?
+  </Text>
+);
 ```
 
 ### Terrain Passability Rules
@@ -271,7 +299,7 @@ export const DamageNumber: React.FC<{ damage: number }> = ({ damage }) => {
 ```typescript
 // constants/colors.ts
 export const COLORS = {
-  // Terrain
+  // Terrain — visible state (full brightness)
   terrain: {
     plain:    '#8DB87A',
     highland: '#A0896B',
@@ -280,6 +308,22 @@ export const COLORS = {
     building: '#7A7A8A',
     rubble:   '#8A7A6A',
   },
+  // Terrain — explored state (dimmed: multiply by ~0.55)
+  terrainDim: {
+    plain:    '#4E6844',
+    highland: '#5A4D3C',
+    forest:   '#223D29',
+    water:    '#2A5278',
+    building: '#454550',
+    rubble:   '#4E4540',
+  },
+  // Fog of war
+  fog: {
+    unexplored: '#000000',    // Completely black — terrain not yet seen
+    exploredOverlay: 'rgba(0,0,0,0.45)', // Semi-transparent overlay on explored tiles
+  },
+  // Ghost marker (last known position)
+  ghost: '#FF6B6B',           // Dim red "?" icon opacity 0.45
   // Factions
   player:   '#4A90D9',  // blue
   enemy:    '#D94A4A',  // red
@@ -297,6 +341,19 @@ export const COLORS = {
   surface:  '#16213E',
   card:     '#0F3460',
 };
+
+/**
+ * Returns the correct fill color for a hex tile based on its visibility state.
+ * Use this in HexCell instead of accessing COLORS.terrain directly.
+ */
+export function getTerrainColor(
+  terrain: TerrainType,
+  visibility: 'unexplored' | 'visible' | 'explored'
+): string {
+  if (visibility === 'unexplored') return COLORS.fog.unexplored;
+  if (visibility === 'explored')   return COLORS.terrainDim[terrain] ?? COLORS.terrainDim.plain;
+  return COLORS.terrain[terrain] ?? COLORS.terrain.plain;
+}
 ```
 
 ---
@@ -322,3 +379,6 @@ export const COLORS = {
 | List scrolling is slow | Using `ScrollView` for long lists | Switch to `FlatList` |
 | Action button active after full move | `canAct` not derived from `movedDistance` | Compute from `movedDistance >= unit.movement` |
 | Water tile reachable | Missing passability check | Check `terrain === 'water'` in pathfinding |
+| Enemy visible in dark forest | Not checking `visibility` before rendering enemy token | Use `showUnit = unit && visibility === 'visible'` |
+| Ghost flickers on explored plain | `lastKnownPositions` not cleared after unit re-appears | Dispatch `clearLastKnownPosition` when visibility becomes `'visible'` |
+| Terrain looks wrong in explored tiles | Using `COLORS.terrain` directly instead of `getTerrainColor` | Always call `getTerrainColor(terrain, visibility)` |

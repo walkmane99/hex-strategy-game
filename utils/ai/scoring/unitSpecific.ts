@@ -203,6 +203,7 @@ const UNIT_EVALUATORS: Record<UnitType, ScoreEvaluator> = {
   engineer:    evaluateEngineer,
   berserker:   evaluateBerserker,
   illusionist: evaluateIllusionist,
+  logistics:   () => 0,
 };
 
 export function unitSpecificEvaluator(

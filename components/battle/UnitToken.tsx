@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import UnitGlyph from '@/components/units/UnitGlyph';
 import { C } from '@/constants/theme';
 import { Unit } from '@/types/unit';
@@ -16,6 +16,7 @@ interface UnitTokenProps {
   pathIndex: number;
   pathProgress: number;
   pathSegmentPixels: Array<{ x: number; y: number }>;
+  showSupplyLine?: boolean;
 }
 
 export default function UnitToken({
@@ -24,6 +25,7 @@ export default function UnitToken({
   pixelX,
   pixelY,
   tokenSize,
+  showSupplyLine = false,
 }: UnitTokenProps) {
   if (unitData.isDead) return null;
 
@@ -66,6 +68,11 @@ export default function UnitToken({
           ]}
         />
       </View>
+      {showSupplyLine && unitData.isSupplyCut && (
+        <View style={styles.supplyCutBadge}>
+          <Text style={styles.supplyCutIcon}>⊘</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -84,5 +91,23 @@ const styles = StyleSheet.create({
   },
   hpBarFill: {
     height: 2,
+  },
+  supplyCutBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#FF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supplyCutIcon: {
+    color: '#FF4444',
+    fontSize: 10,
+    fontWeight: 'bold',
   },
 });

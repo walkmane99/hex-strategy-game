@@ -12,6 +12,7 @@ export const UNIT_NAMES_JA: Record<UnitType, string> = {
   engineer:    'エンジニア',
   berserker:   'バーサーカー',
   illusionist: 'イリュージョニスト',
+  logistics:   'ロジスティクス兵',
 };
 
 // 各ユニットのベースステータス (カスタマイズ前)
@@ -26,6 +27,7 @@ export const UNIT_BASE_STATS: Record<UnitType, UnitStats> = {
   engineer:    { maxHP: 1000, attack: 7,  defense: 9,  movement: 6,  scout: 9  },
   berserker:   { maxHP: 1000, attack: 12, defense: 8,  movement: 7,  scout: 5  },
   illusionist: { maxHP: 1000, attack: 5,  defense: 7,  movement: 8,  scout: 12 },
+  logistics:   { maxHP: 1000, attack: 4,  defense: 10, movement: 4,  scout: 8  },
 };
 
 // 相性サイクル (強い順)
@@ -34,8 +36,8 @@ export const AFFINITY_CYCLE: UnitType[] = [
   'tanker', 'archer', 'seeker', 'sniper', 'attacker', 'assassin',
 ];
 
-// 最初から使用可能なユニット (10種)
+// 最初から使用可能なユニット (11種)
 export const INITIAL_UNITS: UnitType[] = [
   'tanker', 'attacker', 'healer', 'seeker', 'assassin',
-  'sniper', 'archer', 'engineer', 'berserker', 'illusionist',
+  'sniper', 'archer', 'engineer', 'berserker', 'illusionist', 'logistics',
 ];

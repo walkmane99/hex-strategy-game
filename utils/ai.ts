@@ -3,11 +3,12 @@ import { MapCell, OffsetCoord, TerrainType } from '@/types/map';
 import { AIAction } from '@/types/battle';
 import { offsetDistance } from './hexMath';
 import { reachableCells } from './pathfinding';
-import { checkAffinity, getAffinityMultiplier } from './combat';
+import { checkAffinity, getAffinityMultiplier, getEffectiveMovement } from './combat';
 
 const ATTACK_RANGE: Record<UnitType, number> = {
   tanker: 1, attacker: 1, healer: 1, seeker: 1, assassin: 1,
   berserker: 1, engineer: 1, illusionist: 1, archer: 2, sniper: 3,
+  logistics: 1,
 };
 
 const TERRAIN_DEFENSE: Record<TerrainType, number> = {
@@ -64,7 +65,7 @@ export function findRetreatCell(
   players: Unit[],
   grid: MapCell[][],
 ): OffsetCoord | null {
-  const cells = reachableCells(unit.position, grid, unit, unit.stats.movement);
+  const cells = reachableCells(unit.position, grid, unit, getEffectiveMovement(unit));
   if (cells.length === 0) return null;
 
   const livingPlayers = players.filter(p => !p.isDead);
@@ -89,7 +90,7 @@ export function findApproachCell(
   target: Unit,
   grid: MapCell[][],
 ): OffsetCoord | null {
-  const cells = reachableCells(unit.position, grid, unit, unit.stats.movement);
+  const cells = reachableCells(unit.position, grid, unit, getEffectiveMovement(unit));
   if (cells.length === 0) return null;
 
   const candidates = cells.filter(
@@ -128,7 +129,7 @@ export function findHealPosition(
   if (offsetDistance(healer.position, target.position) <= 1) {
     return healer.position;
   }
-  const cells = reachableCells(healer.position, grid, healer, healer.stats.movement);
+  const cells = reachableCells(healer.position, grid, healer, getEffectiveMovement(healer));
   if (cells.length === 0) return null;
 
   return cells.sort((a, b) =>

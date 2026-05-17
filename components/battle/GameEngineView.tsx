@@ -28,6 +28,7 @@ interface GameEngineViewProps {
   isExternalAnimating: boolean;
   gridRef: React.MutableRefObject<MapCell[][]>;
   mapWidth: number;
+  showSupplyLine?: boolean;
   onSelectionChange: (unitId: string | null) => void;
   onMoveComplete: (unitId: string, finalPos: OffsetCoord) => void;
   onAttackEnemy: (attackerId: string, targetId: string) => void;
@@ -42,6 +43,7 @@ export default function GameEngineView({
   isExternalAnimating,
   gridRef,
   mapWidth,
+  showSupplyLine = false,
   onSelectionChange,
   onMoveComplete,
   onAttackEnemy,
@@ -81,7 +83,8 @@ export default function GameEngineView({
     eUnits: Unit[],
     selectedId: string | null,
     sc: number,
-    ts: number
+    ts: number,
+    supplyLine: boolean,
   ): Record<string, unknown> {
     const entities: Record<string, unknown> = {};
     for (const unit of [...pUnits, ...eUnits]) {
@@ -98,6 +101,7 @@ export default function GameEngineView({
         pathIndex: 0,
         pathProgress: 0,
         pathSegmentPixels: [],
+        showSupplyLine: supplyLine,
         renderer: UnitToken,
       };
       entities[unit.id] = entity;
@@ -114,7 +118,7 @@ export default function GameEngineView({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialEntities = useMemo(
     () => {
-      const e = buildEntitiesFromUnits(playerUnits, enemyUnits, selectedUnitId, scale, tokenSize);
+      const e = buildEntitiesFromUnits(playerUnits, enemyUnits, selectedUnitId, scale, tokenSize, showSupplyLine);
       entitiesRef.current = e;
       return e;
     },

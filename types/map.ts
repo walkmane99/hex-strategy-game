@@ -57,4 +57,5 @@ export type VictoryCondition =
   | 'escape'       // 脱出戦
   | 'time_limit'   // 時間切れ
   | 'territory'    // 陣取り
-  | 'protect_hq';  // 本拠地防衛
+  | 'protect_hq'   // 本拠地防衛
+  | 'supply_line'; // 兵站確保

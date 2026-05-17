@@ -13,6 +13,7 @@ export interface UnitEntity {
   pathIndex: number;
   pathProgress: number;
   pathSegmentPixels: Array<{ x: number; y: number }>;
+  showSupplyLine?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   renderer: React.ComponentType<any>;
 }

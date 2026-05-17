@@ -10,7 +10,8 @@ export type UnitType =
   | 'archer'
   | 'engineer'
   | 'berserker'
-  | 'illusionist';
+  | 'illusionist'
+  | 'logistics';
 
 export type UnitSide = 'player' | 'enemy';
 
@@ -32,6 +33,7 @@ export interface Unit {
   isVisible: boolean;   // 敵から見えているか
   hasActed: boolean;    // このターン行動済みか
   isDead: boolean;
+  isSupplyCut?: boolean;
   customPoints?: number; // カスタマイズポイント振り分け済み
   skills?: SkillSlot[];
 }

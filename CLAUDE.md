@@ -254,11 +254,33 @@ npx jest
 | 建物 | +4 | 1 | 視線遮断 |
 | 瓦礫 | +1 | 2 | なし |
 
-### 索敵ルール
-- 基本視認範囲: 1〜2マス
-- 高地: +1マス
-- 森林: 被索敵率低下
-- アサシン: 毎ターン乱数チェックで非発見の可能性
+### 索敵・フォグ・オブ・ウォールール
+
+#### 視界範囲の二層構造
+| 種別 | 範囲 | 用途 |
+|------|------|------|
+| **表示視界**（フォグ解除） | 5マス（`FOG_VISIBLE_RANGE`） | タイルの明暗描画 |
+| **戦術視界**（ユニット索敵） | 1〜2マス（索敵力依存） | 敵ユニット発見・攻撃対象化 |
+
+高地の「索敵範囲+1」は**戦術視界のみ**に影響。
+
+#### 3段階フォグ・オブ・ウォー
+| 状態 | 描画 | 条件 |
+|------|------|------|
+| `unexplored` | 黒（地形不明） | 未到達タイル |
+| `visible` | 明るい（通常） | 自軍ユニットから5マス以内 |
+| `explored` | 暗い（地形表示） | 一度見たが現在視界外 |
+
+`explored` タイルは**黒に戻らない**。地形情報は保持される。
+
+#### 全ユニットのステルス復帰ルール
+| タイル状態 | 地形 | 敵ユニットの扱い |
+|-----------|------|----------------|
+| `visible` | 任意 | 常に可視 |
+| `explored` | 森・建物・高地・瓦礫 | **ステルス復帰**（非表示） |
+| `explored` | 平地 | ステルス復帰 ＋ **ゴースト（`?`）マーカー**を表示 |
+
+- アサシンは `visible` タイル内でも毎ターン乱数チェックで非発見の可能性あり（従来どおり）
 
 #### アサシン発見確率式
 ```
@@ -315,7 +337,7 @@ units: Unit[]  // 検索O(n)になる
 | スライス | 主な管理内容 |
 |---------|------------|
 | `unitSlice` | ユニット状態（正規化）、`substituteEnemy`、`tickCooldowns`、`activateSkill` |
-| `battleSlice` | ターン状態、`teamInventory`、`reserves`、`substitutionUsedThisTurn` |
+| `battleSlice` | ターン状態、`teamInventory`、`reserves`、`substitutionUsedThisTurn`、**`tileVisibility`**、**`lastKnownPositions`** |
 | `playerSlice` | プレイヤーデータ、`selectedItems` |
 
 ### AI実装方針（Utility AI）
@@ -327,6 +349,13 @@ units: Unit[]  // 検索O(n)になる
   - `activeUnits.length <= 1` の場合は Layer 2 をスキップ
 - **パフォーマンス目標**: 1ターンの思考時間 500ms 以内（Android実機）
 - AI判断の閾値定数は `constants/aiThresholds.ts` に集約すること（ハードコード禁止）
+
+### フォグ・オブ・ウォー実装方針
+- **定数**: `constants/gameConfig.ts` に `FOG_VISIBLE_RANGE = 5` を定義
+- **視界計算**: `utils/ai/perception/visibilityMap.ts` の `updateTileVisibility()` を毎ターン呼ぶ
+- **Redux**: `battleSlice` の `tileVisibility` / `lastKnownPositions` で状態管理
+- **描画**: `components-SKILL.md` の `getTerrainColor(terrain, visibility)` を必ず使う
+- **ステルス判定**: 敵ユニットのレンダリング・AI攻撃候補生成の前に `isUnitStealthInExplored()` を呼ぶこと
 
 ### パフォーマンス
 - `React.memo` をコンポーネントに適用

@@ -22,6 +22,7 @@ import {
   setUnitVisible,
   tickCooldowns,
   substituteUnit,
+  updateSupplyStatuses,
 } from '@/store/slices/unitSlice';
 import {
   setReachableCells,
@@ -33,6 +34,7 @@ import {
   setReserves,
   executeSubstitution,
   resetSubstitutionFlag,
+  setMissionMetadata,
 } from '@/store/slices/battleSlice';
 import { ItemSlot } from '@/types/item';
 import { endPlayerTurn } from '@/store/slices/gameSlice';
@@ -50,8 +52,8 @@ import { C, MONO, DISPLAY } from '@/constants/theme';
 import { UNIT_BASE_STATS, UNIT_NAMES_JA } from '@/constants/unitStats';
 import { MapCell, OffsetCoord, TerrainType } from '@/types/map';
 import { Unit, UnitType } from '@/types/unit';
-import { AffinityResult } from '@/utils/combat';
-import { calculateDamage } from '@/utils/combat';
+import { AffinityResult, calculateDamage, getEffectiveMovement } from '@/utils/combat';
+import { computeSupplyStatuses } from '@/utils/ai/perception/supplyLineStatus';
 import { reachableCells } from '@/utils/pathfinding';
 import { offsetDistance } from '@/utils/hexMath';
 import { getAttackRange } from '@/utils/ai';
@@ -165,6 +167,7 @@ export default function TacticsScreen() {
   const selectedReserveUnitId = useAppSelector((s) => s.player.selectedReserveUnitId);
   const reserves = useAppSelector((s) => s.battle.reserves);
   const substitutionUsedThisTurn = useAppSelector((s) => s.battle.substitutionUsedThisTurn);
+  const missionMetadata = useAppSelector((s) => s.battle.missionMetadata);
 
   const gridRef = useRef<MapCell[][]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -238,8 +241,20 @@ export default function TacticsScreen() {
     if (phase === 'player_turn' && isInitialized) {
       updateVisibility();
       dispatch(tickCooldowns('player'));
+
+      if (missionMetadata?.baseLocations) {
+        const state = store.getState();
+        const freshPlayers = playerUnitSelectors.selectAll(state).filter(u => !u.isDead);
+        const freshEnemies = enemyUnitSelectors.selectAll(state).filter(u => !u.isDead);
+        const statuses = computeSupplyStatuses(
+          freshPlayers,
+          freshEnemies,
+          missionMetadata.baseLocations,
+        );
+        dispatch(updateSupplyStatuses(statuses));
+      }
     }
-  }, [phase, isInitialized, updateVisibility, dispatch]);
+  }, [phase, isInitialized, updateVisibility, dispatch, missionMetadata, store]);
 
   // Recompute move/attack overlays when selection or phase changes
   useEffect(() => {
@@ -269,7 +284,7 @@ export default function TacticsScreen() {
       const startCell = gridRef.current[unit.position.row]?.[unit.position.col];
       const savedUnitId = startCell?.unitId;
       if (startCell) startCell.unitId = undefined;
-      const cells = reachableCells(unit.position, gridRef.current, unit, unit.stats.movement);
+      const cells = reachableCells(unit.position, gridRef.current, unit, getEffectiveMovement(unit));
       if (startCell && savedUnitId) startCell.unitId = savedUnitId;
       dispatch(setReachableCells(cells));
     }
@@ -518,6 +533,7 @@ export default function TacticsScreen() {
             isExternalAnimating={isAnimating}
             gridRef={gridRef}
             mapWidth={mapWidth}
+            showSupplyLine={!!missionMetadata?.baseLocations}
             onSelectionChange={handleSelectionChange}
             onMoveComplete={handleMoveComplete}
             onAttackEnemy={handleAttackEnemy}

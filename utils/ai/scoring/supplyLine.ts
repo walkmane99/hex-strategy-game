@@ -38,9 +38,10 @@ export function supplyLineEvaluator(
 
   // 基地座標が設定されていない場合は評価スキップ
   const baseLocations = missionMetadata?.baseLocations;
-  if (!baseLocations || baseLocations.length === 0) return 0;
+  if (!baseLocations) return 0;
 
-  const base = baseLocations[0]!;
+  const playerBase = baseLocations.player;
+  const enemyBase = baseLocations.enemy;
   let bonus = 0;
 
   if (
@@ -49,21 +50,20 @@ export function supplyLineEvaluator(
   ) {
     const dest = candidate.targetTile;
 
-    // 移動先が敵の補給線を遮断する位置か (= 敵と敵基地の経路上に入る)
-    // 簡略化: 可視敵のうち移動先が経路上に入るケースを検出
+    // 移動先が敵(player)の補給線を遮断する位置か (= player ユニットと player 基地の経路上に入る)
     const cutCount = visibleEnemyUnits.filter(enemy =>
-      isOnPath(enemy.position, base, dest),
+      isOnPath(enemy.position, playerBase, dest),
     ).length;
     if (cutCount > 0) bonus += weights.supplyCutPositionBonus; // +55
 
-    // 自軍補給線が切断中の状態でさらに前進するペナルティ
+    // 自軍(enemy AI)補給線が切断中の状態でさらに前進するペナルティ
     const selfLineCut = isSupplyLineCut(
       actingUnit.position,
-      base,
+      enemyBase,
       visibleEnemyUnits,
     );
     if (selfLineCut) {
-      const destLineCut = isSupplyLineCut(dest, base, visibleEnemyUnits);
+      const destLineCut = isSupplyLineCut(dest, enemyBase, visibleEnemyUnits);
       if (destLineCut) bonus += weights.supplyCutSelfPenalty; // -40
     }
   }
@@ -72,9 +72,9 @@ export function supplyLineEvaluator(
     (candidate.type === 'attack' || candidate.type === 'moveAndAttack') &&
     candidate.targetUnit
   ) {
-    // 補給線が切断されている敵を追撃 +supplyCutTargetBonus
+    // 補給線が切断されている敵(player)を追撃 +supplyCutTargetBonus
     const allyPositions = allyUnits.map(a => ({ position: a.position }));
-    if (isSupplyLineCut(candidate.targetUnit.position, base, allyPositions)) {
+    if (isSupplyLineCut(candidate.targetUnit.position, playerBase, allyPositions)) {
       bonus += weights.supplyCutTargetBonus; // +25
     }
   }

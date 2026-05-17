@@ -33,6 +33,7 @@ const UNIT_STAT_BARS: Record<string, number[]> = {
   engineer:    [4, 2, 3, 3, 4],
   berserker:   [4, 4, 3, 3, 2],
   illusionist: [4, 2, 2, 4, 4],
+  logistics:   [4, 1, 3, 2, 3],
 };
 
 const STAT_LABELS = ['HP', 'ATK', 'DEF', 'MV', 'SCN'];

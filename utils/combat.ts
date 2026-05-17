@@ -38,6 +38,7 @@ export function getAffinityMultiplier(affinity: AffinityResult): number {
 /**
  * ダメージ計算
  * ダメージ = max(0, (攻撃力 × 相性 × rand(0.1~1.0) - (防御力 + 地形ボーナス)) × 10)
+ * 補給線切断時: 攻撃側 -30%、防御側 -20%
  */
 export function calculateDamage(
   attacker: Unit,
@@ -50,14 +51,23 @@ export function calculateDamage(
   const affinityMult = getAffinityMultiplier(affinity);
   const random = COMBAT_CONFIG.RANDOM_MIN + Math.random() * (COMBAT_CONFIG.RANDOM_MAX - COMBAT_CONFIG.RANDOM_MIN);
 
+  const atkSupplyMult = attacker.isSupplyCut ? 0.7 : 1.0;
+  const defSupplyMult = defender.isSupplyCut ? 0.8 : 1.0;
+
   const terrainDefense = TC[defenderTerrain].defenseBonus;
-  const effectiveAttack = (attacker.stats.attack + attackerAuraBonus) * affinityMult;
-  const effectiveDefense = defender.stats.defense + defenderAuraBonus + terrainDefense;
+  const effectiveAttack = (attacker.stats.attack + attackerAuraBonus) * affinityMult * atkSupplyMult;
+  const effectiveDefense = defender.stats.defense * defSupplyMult + defenderAuraBonus + terrainDefense;
 
   const rawDamage = (effectiveAttack * random - effectiveDefense) * COMBAT_CONFIG.DAMAGE_MULTIPLIER;
   const damage = Math.max(COMBAT_CONFIG.MIN_DAMAGE, Math.round(rawDamage));
 
   return { damage, affinity };
+}
+
+/** 補給線切断中のユニットは移動力 -1（最低1）*/
+export function getEffectiveMovement(unit: Unit): number {
+  if (unit.isSupplyCut) return Math.max(1, unit.stats.movement - 1);
+  return unit.stats.movement;
 }
 
 // =====================
@@ -77,9 +87,11 @@ export function getBerserkerMultiplier(currentHP: number, maxHP: number): number
 
 import { AURA_CONFIG } from '@/constants/gameConfig';
 
-export function calculateHeal(): number {
-  return Math.round(
+/** 補給線切断中のターゲットへの回復は半減 */
+export function calculateHeal(target?: Unit): number {
+  const base = Math.round(
     AURA_CONFIG.HEALER_HEAL_MIN +
     Math.random() * (AURA_CONFIG.HEALER_HEAL_MAX - AURA_CONFIG.HEALER_HEAL_MIN)
   );
+  return target?.isSupplyCut ? Math.floor(base * 0.5) : base;
 }

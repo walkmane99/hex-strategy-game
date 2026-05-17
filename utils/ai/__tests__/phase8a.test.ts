@@ -521,11 +521,16 @@ describe('missionAdjustEvaluator — protect_hq (拠点防衛)', () => {
 
 describe('supplyLineEvaluator — 補給線切断', () => {
   const grid = makeGrid();
-  const base: OffsetCoord = { col: 0, row: 0 };
-  const meta: MissionMetadata = { baseLocations: [base] };
+  // AI(enemy)基地 = (0,0)、player基地 = (0,9) — (4,4)が player 補給線上に乗らない配置
+  const meta: MissionMetadata = {
+    baseLocations: {
+      player: { col: 0, row: 9 },
+      enemy: { col: 0, row: 0 },
+    },
+  };
 
   it('自軍補給線上に敵がいる時、さらに補給線上の前進候補に supplyCutSelfPenalty (-40) が乗る', () => {
-    // unit: (5,5), base: (0,0), enemy: (3,3) (経路上)
+    // unit(enemy AI): (5,5), enemy base: (0,0), player: (3,3) (経路上)
     const unit = makeUnit('e1', 'attacker', { col: 5, row: 5 });
     const enemyOnPath = makeUnit('p1', 'tanker', { col: 3, row: 3 }, { side: 'player' });
 

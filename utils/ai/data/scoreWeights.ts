@@ -67,4 +67,5 @@ export const DEFAULT_SCORE_WEIGHTS: ScoreWeights = {
 export const ATTACK_RANGE_BY_TYPE: Record<string, number> = {
   tanker: 1, attacker: 1, healer: 1, seeker: 1, assassin: 1,
   berserker: 1, engineer: 1, illusionist: 1, archer: 2, sniper: 3,
+  logistics: 1,
 };

@@ -1,0 +1,29 @@
+{
+  "id": "supply_line_01",
+  "name": "補給線確保",
+  "victoryCondition": "supply_line",
+  "missionMetadata": {
+    "baseLocations": {
+      "player": { "col": 4, "row": 9 },
+      "enemy": { "col": 4, "row": 0 }
+    }
+  },
+  "turnLimit": 15,
+  "mapId": "standard_10x10",
+  "initialDeployment": {
+    "player": [
+      { "col": 3, "row": 8 },
+      { "col": 4, "row": 8 },
+      { "col": 5, "row": 8 },
+      { "col": 3, "row": 9 },
+      { "col": 5, "row": 9 }
+    ],
+    "enemy": [
+      { "col": 3, "row": 1 },
+      { "col": 4, "row": 1 },
+      { "col": 5, "row": 1 },
+      { "col": 3, "row": 0 },
+      { "col": 5, "row": 0 }
+    ]
+  }
+}

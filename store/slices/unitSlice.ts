@@ -136,6 +136,23 @@ const unitSlice = createSlice({
         enemyAdapter.addOne(state.enemyUnits, { ...newUnit, position, hasActed: true, side: 'enemy' });
       }
     },
+    updateSupplyStatuses: (
+      state,
+      action: PayloadAction<{
+        player: Array<{ id: string; isSupplyCut: boolean }>;
+        enemy: Array<{ id: string; isSupplyCut: boolean }>;
+      }>,
+    ) => {
+      const { player, enemy } = action.payload;
+      player.forEach(({ id, isSupplyCut }) => {
+        const u = state.playerUnits.entities[id];
+        if (u) u.isSupplyCut = isSupplyCut;
+      });
+      enemy.forEach(({ id, isSupplyCut }) => {
+        const u = state.enemyUnits.entities[id];
+        if (u) u.isSupplyCut = isSupplyCut;
+      });
+    },
     tickCooldowns: (state, action: PayloadAction<'player' | 'enemy'>) => {
       const adapter = action.payload === 'player' ? state.playerUnits : state.enemyUnits;
       Object.values(adapter.entities).forEach(unit => {
@@ -165,6 +182,7 @@ export const {
   tickCooldowns,
   substituteEnemy,
   substituteUnit,
+  updateSupplyStatuses,
 } = unitSlice.actions;
 
 // セレクター

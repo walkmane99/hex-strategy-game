@@ -10,11 +10,13 @@ import {
   activateSkill,
   tickCooldowns,
   substituteEnemy,
+  updateSupplyStatuses,
 } from '@/store/slices/unitSlice';
 import { endEnemyTurn } from '@/store/slices/gameSlice';
 import { addLog, setAnimating, consumeItem, executeSubstitution, resetSubstitutionFlag } from '@/store/slices/battleSlice';
 import { calculateDamage } from '@/utils/combat';
 import { updateGridCell } from '@/utils/ai';
+import { computeSupplyStatuses } from '@/utils/ai/perception/supplyLineStatus';
 import { executeAITurn } from '@/utils/ai/core/AIController';
 import { DEFAULT_SCORE_WEIGHTS } from '@/utils/ai/data/scoreWeights';
 import { MapCell } from '@/types/map';
@@ -40,15 +42,31 @@ export function useAI(gridRef: MutableRefObject<MapCell[][]>): {
 
     try {
       const state = store.getState();
+      const missionMetadata = state.battle.missionMetadata;
+
+      const enemyUnitsAlive = enemyUnitSelectors.selectAll(state).filter(u => !u.isDead);
+      const playerUnitsAlive = playerUnitSelectors.selectAll(state).filter(u => !u.isDead);
+
+      // 敵ターン開始時に補給線状態を再計算
+      if (missionMetadata?.baseLocations) {
+        const statuses = computeSupplyStatuses(
+          playerUnitsAlive,
+          enemyUnitsAlive,
+          missionMetadata.baseLocations,
+        );
+        dispatch(updateSupplyStatuses(statuses));
+      }
+
       const snapshot = {
-        enemyUnits: enemyUnitSelectors.selectAll(state).filter(u => !u.isDead),
-        playerUnits: playerUnitSelectors.selectAll(state).filter(u => !u.isDead),
+        enemyUnits: enemyUnitsAlive,
+        playerUnits: playerUnitsAlive,
         grid: gridRef.current,
         currentTurn: state.game.currentTurn,
         mission: 'elimination' as const,
         teamInventory: state.battle.teamInventory,
         reserves: state.battle.reserves,
         substitutionUsedThisTurn: state.battle.substitutionUsedThisTurn,
+        missionMetadata,
       };
 
       const result = executeAITurn(snapshot, DEFAULT_SCORE_WEIGHTS, 'normal');

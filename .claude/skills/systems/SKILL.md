@@ -211,6 +211,20 @@ interface BattleState {
   // Mission-specific metadata (key unit IDs, escape tiles, HQ location, etc.)
   missionMetadata: MissionMetadata | null;
 
+  // ── Fog of War ──────────────────────────────────────────────────
+  // Per-tile visibility state. Key format: `${col},${row}`
+  tileVisibility: Record<string, 'unexplored' | 'visible' | 'explored'>;
+
+  // Last confirmed position of enemy units that re-entered stealth.
+  // Only populated for units that vanished into plain terrain (ghost marker shown).
+  // Cleared when the unit becomes visible again.
+  lastKnownPositions: Record<string, {
+    position: { col: number; row: number };
+    unitType: string;  // UnitType
+    turnLastSeen: number;
+  }>;
+  // ────────────────────────────────────────────────────────────────
+
   // UI / log
   battleLog: string[];
   selectedCellId: string | null;
@@ -223,6 +237,8 @@ const battleSlice = createSlice({
     reserves: { player: [], enemy: [] },
     substitutionUsedThisTurn: { player: false, enemy: false },
     missionMetadata: null,
+    tileVisibility: {},          // Populated on battle init via updateTileVisibility()
+    lastKnownPositions: {},      // Populated when enemy units re-enter stealth
     battleLog: [],
     selectedCellId: null,
   } as BattleState,
@@ -262,6 +278,36 @@ const battleSlice = createSlice({
       state.missionMetadata = action.payload;
     },
 
+    // ── Fog of War ───────────────────────────────────────────────
+    // Replace the entire tileVisibility map (result of updateTileVisibility()).
+    // Dispatch at the start of each player turn.
+    setTileVisibility: (
+      state,
+      action: PayloadAction<Record<string, 'unexplored' | 'visible' | 'explored'>>
+    ) => {
+      state.tileVisibility = action.payload;
+    },
+
+    // Record last known position when an enemy re-enters stealth on plain terrain.
+    setLastKnownPosition: (
+      state,
+      action: PayloadAction<{
+        unitId: string;
+        position: { col: number; row: number };
+        unitType: string;
+        turnLastSeen: number;
+      }>
+    ) => {
+      const { unitId, ...rest } = action.payload;
+      state.lastKnownPositions[unitId] = rest;
+    },
+
+    // Clear ghost marker when the unit becomes visible again.
+    clearLastKnownPosition: (state, action: PayloadAction<string>) => {
+      delete state.lastKnownPositions[action.payload];
+    },
+    // ────────────────────────────────────────────────────────────────
+
     // ── Log / UI ─────────────────────────────────────────────────
     addLog: (state, action: PayloadAction<string>) => {
       state.battleLog.push(action.payload);
@@ -277,6 +323,7 @@ export const {
   setReserves,
   executeSubstitution, resetSubstitutionFlag,
   setMissionMetadata,
+  setTileVisibility, setLastKnownPosition, clearLastKnownPosition,
   addLog, selectCell,
 } = battleSlice.actions;
 
@@ -657,3 +704,7 @@ export const executeAITurn = createAsyncThunk(
 - [ ] Dispatch `setTeamInventory` + `setReserves` + `setMissionMetadata` on battle init
 - [ ] Import AI logic from `utils/ai/core/AIController` — never from `utils/ai.ts`
 - [ ] Water tiles must never appear in any unit's reachable set (enforce in pathfinding)
+- [ ] Dispatch `setTileVisibility` (result of `updateTileVisibility()`) at the **start** of each player turn
+- [ ] Dispatch `setLastKnownPosition` when an enemy transitions `visible → explored` on plain terrain
+- [ ] Dispatch `clearLastKnownPosition` when a previously-ghosted enemy re-enters a `visible` tile
+- [ ] Initialize `tileVisibility` to all-`unexplored` on battle start; do NOT persist it between battles

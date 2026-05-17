@@ -6,6 +6,7 @@ import { ActionCandidate, AIContext, AIDifficulty } from './types';
 import { ScoreEvaluator } from '../scoring/types';
 import { reachableCells } from '@/utils/pathfinding';
 import { offsetDistance, offsetRange } from '@/utils/hexMath';
+import { getEffectiveMovement } from '@/utils/combat';
 import { ATTACK_RANGE_BY_TYPE } from '../data/scoreWeights';
 import { tieBreakerCompare } from './tieBreaker';
 
@@ -225,7 +226,8 @@ export function generateCandidates(
     }
   }
 
-  const reachable = reachableCells(unit.position, grid, unit, unit.stats.movement);
+  const effMov = getEffectiveMovement(unit);
+  const reachable = reachableCells(unit.position, grid, unit, effMov);
   for (const cell of reachable) {
     candidates.push({ type: 'move', unit, targetTile: cell, score: 0 });
   }
@@ -233,7 +235,7 @@ export function generateCandidates(
   // moveAndAttack 候補 (仕様書4.2.1: 移動距離 < 最大移動力のときのみ攻撃可)
   // スナイパーは移動後攻撃不可（射撃静止前提）
   if (unit.type !== 'sniper') {
-    const maxMov = unit.stats.movement;
+    const maxMov = effMov;
     for (const cell of reachable) {
       const dist = offsetDistance(unit.position, cell);
       if (dist === 0) continue; // 移動なし = 'attack' 候補と重複するためスキップ
